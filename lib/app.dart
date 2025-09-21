@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/lock_screen.dart';
+import 'screens/home_screen.dart';
 import 'utils/color_utils.dart';
 
 /// Main app widget with theme configuration
@@ -12,7 +12,7 @@ class MoneyTrackApp extends StatelessWidget {
       title: 'MoneyTrack',
       debugShowCheckedModeBanner: false,
       theme: _buildLightTheme(),
-      home: const LockScreen(),
+      home: const HomeScreen(),
     );
   }
 

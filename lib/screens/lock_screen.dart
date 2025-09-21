@@ -33,6 +33,19 @@ class _LockScreenState extends State<LockScreen> {
     });
 
     try {
+      // First check if authentication is available
+      final bool hasAuth = await AuthService.hasAnyAuthMethod();
+      
+      if (!hasAuth) {
+        // No authentication method available, allow access
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        }
+        return;
+      }
+      
       final bool isAuthenticated = await AuthService.authenticate();
       
       if (isAuthenticated && mounted) {
@@ -54,7 +67,7 @@ class _LockScreenState extends State<LockScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'An unexpected error occurred. Please try again.';
+          _errorMessage = 'An unexpected error occurred: ${e.toString()}';
         });
       }
     } finally {
@@ -199,6 +212,19 @@ class _LockScreenState extends State<LockScreen> {
                       ),
                     ),
                   ),
+                ),
+              
+              const SizedBox(height: 16),
+              
+              // Skip authentication button (for debugging)
+              if (!_isAuthenticating)
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (context) => const HomeScreen()),
+                    );
+                  },
+                  child: const Text('Skip Authentication (Debug)'),
                 ),
             ],
           ),

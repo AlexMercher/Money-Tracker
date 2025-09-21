@@ -17,9 +17,20 @@ class Friend extends HiveObject {
 
   Friend({
     required this.id,
-    required this.name,
+    required String name,
     List<Transaction>? transactions,
-  }) : transactions = transactions ?? [];
+  }) : name = _capitalizeName(name),
+       transactions = transactions ?? [];
+
+  /// Capitalizes the first letter of each word in a name
+  static String _capitalizeName(String name) {
+    if (name.trim().isEmpty) return name;
+    
+    return name.trim().split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
 
   /// Calculates the net balance for this friend
   /// Positive = friend owes user, Negative = user owes friend
@@ -73,7 +84,7 @@ class Friend extends HiveObject {
   }) {
     return Friend(
       id: id ?? this.id,
-      name: name ?? this.name,
+      name: name ?? this.name, // This will auto-capitalize through constructor
       transactions: transactions ?? List.from(this.transactions),
     );
   }

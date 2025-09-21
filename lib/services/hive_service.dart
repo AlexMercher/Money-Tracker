@@ -101,4 +101,17 @@ class HiveService {
   static Future<void> close() async {
     await _friendsBox?.close();
   }
+
+  /// Clear all data (useful for testing or complete reset)
+  static Future<void> clearAllData() async {
+    await friendsBox.clear();
+  }
+
+  /// Delete all Hive boxes and data completely
+  static Future<void> deleteAllData() async {
+    await _friendsBox?.close();
+    await Hive.deleteBoxFromDisk(_friendsBoxName);
+    // Reinitialize if needed
+    _friendsBox = await Hive.openBox<Friend>(_friendsBoxName);
+  }
 }

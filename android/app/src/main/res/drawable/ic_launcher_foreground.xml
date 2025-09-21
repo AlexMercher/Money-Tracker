@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Rupee Symbol -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,35 L30,30 L78,30 L78,35 L30,35 Z
+                         M30,45 L30,40 L65,40 L65,45 L30,45 Z
+                         M30,50 L45,50 L45,55 L30,55 L30,50 Z
+                         M50,55 L78,78 L72,84 L44,56 L50,55 Z"
+        android:strokeWidth="2"
+        android:strokeColor="#FFFFFF"/>
+        
+    <!-- Additional rupee lines -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,50 Q58,50 65,57 Q65,65 58,70 L50,70 Q45,65 45,57 Q45,52 48,50 Z"/>
+</vector>

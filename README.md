@@ -150,7 +150,6 @@ moneytrack/```
 
 ### Installation
 
-### Installation
 
 1. **Clone or extract the project**
 
@@ -192,43 +191,11 @@ moneytrack/```
 
    ```
 
-### Platform-specific Setup
-
-### Platform-specific Setup
-
-#### Android
-
-- Minimum SDK version: 21 (Android 5.0)#### Android
-
-- Target SDK version: 34- Minimum SDK version: 21 (Android 5.0)
-
-- Permissions automatically handled for biometric authentication- Target SDK version: 34
-
-- Permissions automatically handled for biometric authentication
-
-#### iOS
-
-- Minimum iOS version: 12.0#### iOS
-
-- Face ID/Touch ID permissions automatically configured- Minimum iOS version: 12.0
-
-- No additional setup required- Face ID/Touch ID permissions automatically configured
-
-- No additional setup required
-
 ## Usage Guide
 
-## Usage Guide
 
-### First Launch
+Tap "Add Transaction" to create your first entry
 
-1. App will request biometric/PIN authentication### First Launch
-
-2. On successful authentication, you'll see the empty home screen1. App will request biometric/PIN authentication
-
-3. Tap "Add Transaction" to create your first entry2. On successful authentication, you'll see the empty home screen
-
-3. Tap "Add Transaction" to create your first entry
 
 ### Adding Transactions
 
@@ -274,59 +241,6 @@ moneytrack/```
 
 - **Grey with ✓**: Balance settled ("Settled - ₹0")
 
-## Testing
-
-## Testing
-
-### Run Unit Tests
-
-```bash### Run Unit Tests
-
-flutter test test/unit/```bash
-
-```flutter test test/unit/
-
-```
-
-### Run Widget Tests
-
-```bash### Run Widget Tests
-
-flutter test test/widget/```bash
-
-```flutter test test/widget/
-
-```
-
-### Run All Tests
-
-```bash### Run All Tests
-
-flutter test```bash
-
-```flutter test
-
-```
-
-### Test Coverage
-
-The test suite covers:### Test Coverage
-
-- Balance calculation logicThe test suite covers:
-
-- CRUD operations for friends and transactions- Balance calculation logic
-
-- Data persistence with Hive- CRUD operations for friends and transactions
-
-- Widget rendering and user interactions- Data persistence with Hive
-
-- Edge cases and error scenarios- Widget rendering and user interactions
-
-- Edge cases and error scenarios
-
-## Build Instructions
-
-## Build Instructions
 
 ### Debug Build
 
@@ -414,33 +328,6 @@ flutter build ios --release```bash
 
 - No cloud synchronization or external dependencies
 
-## Troubleshooting
-
-## Troubleshooting
-
-### Common Issues
-
-### Common Issues
-
-**Authentication fails on startup**
-
-- Ensure device has biometric authentication enabled**Authentication fails on startup**
-
-- Try using device PIN/password as fallback- Ensure device has biometric authentication enabled
-
-- Check device settings for app permissions- Try using device PIN/password as fallback
-
-- Check device settings for app permissions
-
-**App crashes on startup**
-
-- Run `flutter clean && flutter pub get`**App crashes on startup**
-
-- Regenerate adapters: `flutter packages pub run build_runner build --delete-conflicting-outputs`- Run `flutter clean && flutter pub get`
-
-- Clear app data and restart- Regenerate adapters: `flutter packages pub run build_runner build --delete-conflicting-outputs`
-
-- Clear app data and restart
 
 **Build errors**
 
@@ -452,82 +339,6 @@ flutter build ios --release```bash
 
 - Re-run: `flutter pub get`
 
-**Tests failing**
-
-- Ensure no actual devices are connected during testing**Tests failing**
-
-- Run tests individually to isolate issues- Ensure no actual devices are connected during testing
-
-- Check that test database cleanup is working- Run tests individually to isolate issues
-
-- Check that test database cleanup is working
-
-### Debugging
-
-- Use `flutter logs` to see runtime logs### Debugging
-
-- Enable debug mode for detailed error information- Use `flutter logs` to see runtime logs
-
-- Check device logs for authentication issues- Enable debug mode for detailed error information
-
-- Check device logs for authentication issues
-
-## Contributing
-
-## Contributing
-
-This is a complete implementation following the specified requirements. The codebase includes:
-
-This is a complete implementation following the specified requirements. The codebase includes:
-
-- ✅ Offline-first architecture with Hive storage
-
-- ✅ Biometric/PIN authentication on every launch- ✅ Offline-first architecture with Hive storage
-
-- ✅ Complete CRUD operations for friends and transactions- ✅ Biometric/PIN authentication on every launch
-
-- ✅ Red/green color coding with text labels- ✅ Complete CRUD operations for friends and transactions
-
-- ✅ Material 3 design system- ✅ Red/green color coding with text labels
-
-- ✅ Input validation and error handling- ✅ Material 3 design system
-
-- ✅ Clear history prompt when balance = 0- ✅ Input validation and error handling
-
-- ✅ Comprehensive test coverage- ✅ Clear history prompt when balance = 0
-
-- ✅ Clean code with proper documentation- ✅ Comprehensive test coverage
-
-- ✅ Clean code with proper documentation
-
-### Code Style
-
-- PascalCase for classes### Code Style
-
-- camelCase for variables and functions- PascalCase for classes
-
-- 2-space indentation- camelCase for variables and functions
-
-- flutter_lints compliance- 2-space indentation
-
-- Conventional commit messages (feat:, fix:, etc.)- flutter_lints compliance
-
-- Conventional commit messages (feat:, fix:, etc.)
-
-## License
-
-## License
-
-This project is created for educational/demonstration purposes. Feel free to use and modify as needed.
-
-This project is created for educational/demonstration purposes. Feel free to use and modify as needed.
-
----
-
----
-
 **MoneyTracker** - Keep track of who owes what, simply and securely.
 **MoneyTrack** - Keep track of who owes what, simply and securely.
 =======
-# Money-Tracker
->>>>>>> 585a4b26725f98ff8e53d538cad54c42ab6c6732

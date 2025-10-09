@@ -1,5 +1,3 @@
-# MoneyTracker<<<<<<< HEAD
-
 # MoneyTrack
 
 An offline-first Flutter money tracking app for managing who owes whom money between you and your friends.
@@ -14,11 +12,9 @@ An offline-first Flutter money tracking app for managing who owes whom money bet
 
 - **Offline-first storage** using Hive for local data persistence### Core Functionality
 
-- **Biometric/PIN authentication** required on every app launch- **Offline-first storage** using Hive for local data persistence
+- **Friend management** with transaction history-
 
-- **Friend management** with transaction history- **Biometric/PIN authentication** required on every app launch
-
-- **Balance tracking** with color-coded indicators:- **Friend management** with transaction history
+- **Balance tracking** with color-coded indicators:- 
 
   - 🟢 Green: "You Get" (friend owes you money)- **Balance tracking** with color-coded indicators:
 
@@ -32,39 +28,25 @@ An offline-first Flutter money tracking app for managing who owes whom money bet
 
 - **Material 3 design** with clean, card-based UI### User Experience
 
-- **Transaction management** with add, edit, and delete operations- **Material 3 design** with clean, card-based UI
+- **Transaction management** with add, edit, and delete operations
 
-- **Smart balance calculations** automatically updating net amounts- **Transaction management** with add, edit, and delete operations
+- **Smart balance calculations** automatically updating net amounts
 
-- **Clear history prompt** when balance reaches zero- **Smart balance calculations** automatically updating net amounts
+- **Clear history prompt** when balance reaches zero
 
-- **Input validation** ensuring data integrity- **Clear history prompt** when balance reaches zero
+- **Input validation** ensuring data integrity
 
-- **Confirmation dialogs** for destructive operations- **Input validation** ensuring data integrity
+- **Confirmation dialogs** for destructive operations
 
 - **Confirmation dialogs** for destructive operations
 
 ### Security & Data
 
-- **Local authentication** using device PIN, fingerprint, or face unlock### Security & Data
+- **Offline data storage** - no cloud dependencies
 
-- **Offline data storage** - no cloud dependencies- **Local authentication** using device PIN, fingerprint, or face unlock
-
-- **Data persistence** across app launches- **Offline data storage** - no cloud dependencies
-
-- **Error handling** with user-friendly messages- **Data persistence** across app launches
+- **Data persistence** across app launchess
 
 - **Error handling** with user-friendly messages
-
-## Screenshots
-
-## Screenshots
-
-*Add screenshots here when the app is running*
-
-*Add screenshots here when the app is running*
-
-## Project Structure
 
 ## Project Structure
 
@@ -134,8 +116,6 @@ moneytrack/```
 
 ## Setup Instructions
 
-## Setup Instructions
-
 ### Prerequisites
 
 - Flutter SDK (latest stable version)### Prerequisites
@@ -201,19 +181,19 @@ Tap "Add Transaction" to create your first entry
 
 1. Tap the "+" floating action button or "Add Transaction"### Adding Transactions
 
-2. Select existing friend or add new friend name1. Tap the "+" floating action button or "Add Transaction"
+2. Select existing friend or add new friend name
+3. 
+4. Enter transaction amount (₹ currency)
 
-3. Enter transaction amount (₹ currency)2. Select existing friend or add new friend name
-
-4. Choose transaction type:3. Enter transaction amount (₹ currency)
+5. Choose transaction type:)
 
    - **Lent**: You gave money to friend (increases their debt to you)4. Choose transaction type:
 
    - **Borrowed**: You received money from friend (increases your debt to them)   - **Lent**: You gave money to friend (increases their debt to you)
 
-5. Add optional note and select date   - **Borrowed**: You received money from friend (increases your debt to them)
+6. Add optional note and select date   
 
-6. Tap "Save" to create transaction5. Add optional note and select date
+7. Tap "Save" to create transaction
 
 6. Tap "Save" to create transaction
 
@@ -221,34 +201,28 @@ Tap "Add Transaction" to create your first entry
 
 - **View details**: Tap any friend card to see transaction history### Managing Friends
 
-- **Edit transactions**: Use the menu (⋮) on transaction tiles- **View details**: Tap any friend card to see transaction history
+- **Edit transactions**: Use the menu (⋮) on transaction tiles
 
-- **Delete transactions**: Confirm deletion in dialog- **Edit transactions**: Use the menu (⋮) on transaction tiles
+- **Delete transactions**: Confirm deletion in dialog
 
-- **Clear history**: Available when balance = ₹0- **Delete transactions**: Confirm deletion in dialog
-
-- **Delete friend**: Available in friend detail screen menu- **Clear history**: Available when balance = ₹0
-
+- **Clear history**: Available when balance = ₹0
+  
 - **Delete friend**: Available in friend detail screen menu
+
 
 ### Understanding Balance Colors
 
-- **Green with ↓**: Friend owes you money ("You Get ₹X")### Understanding Balance Colors
+- **Green with ↓**: Friend owes you money ("You Get ₹X")
 
-- **Red with ↑**: You owe friend money ("You Owe ₹X")  - **Green with ↓**: Friend owes you money ("You Get ₹X")
-
-- **Grey with ✓**: Balance settled ("Settled - ₹0")- **Red with ↑**: You owe friend money ("You Owe ₹X")  
+- **Red with ↑**: You owe friend money ("You Owe ₹X") 
 
 - **Grey with ✓**: Balance settled ("Settled - ₹0")
-
 
 ### Debug Build
 
 ```bash### Debug Build
 
-flutter run --debug```bash
-
-```flutter run --debug
+flutter run --debug
 
 ```
 
@@ -256,9 +230,7 @@ flutter run --debug```bash
 
 ```bash### Release Build (Android)
 
-flutter build apk --release```bash
-
-```flutter build apk --release
+flutter build apk --release
 
 ```
 
@@ -266,29 +238,22 @@ flutter build apk --release```bash
 
 ```bash### Release Build (iOS)
 
-flutter build ios --release```bash
-
-```flutter build ios --release
+flutter build ios --release
 
 ```
 
 ## Technical Details
 
-## Technical Details
 
 ### Dependencies
 
 - **flutter**: Core framework### Dependencies
 
-- **hive & hive_flutter**: Local database storage- **flutter**: Core framework
+- **hive & hive_flutter**: Local database storage
 
-- **local_auth**: Biometric authentication- **hive & hive_flutter**: Local database storage
-
-- **intl**: Date formatting and localization- **local_auth**: Biometric authentication
-
-- **hive_generator & build_runner**: Code generation- **intl**: Date formatting and localization
-
-- **flutter_lints**: Code quality enforcement- **hive_generator & build_runner**: Code generation
+- **intl**: Date formatting and localization
+  
+- **hive_generator & build_runner**: Code generation
 
 - **flutter_lints**: Code quality enforcement
 
@@ -296,13 +261,13 @@ flutter build ios --release```bash
 
 - **Services**: Handle data storage and authentication### Architecture
 
-- **Models**: Define data structures with Hive adapters- **Services**: Handle data storage and authentication
+- **Models**: Define data structures with Hive adapters
 
-- **Screens**: Main UI pages with business logic- **Models**: Define data structures with Hive adapters
+- **Screens**: Main UI pages with business logic
 
-- **Widgets**: Reusable UI components- **Screens**: Main UI pages with business logic
+- **Widgets**: Reusable UI components
 
-- **Utils**: Helper functions and constants- **Widgets**: Reusable UI components
+- **Utils**: Helper functions and constants
 
 - **Utils**: Helper functions and constants
 
@@ -310,35 +275,26 @@ flutter build ios --release```bash
 
 - **Friends Box**: Stores Friend objects with embedded transactions### Storage Schema
 
-- **Auto-save**: Changes automatically persist to local storage- **Friends Box**: Stores Friend objects with embedded transactions
-
-- **Transactional**: Operations are atomic and consistent- **Auto-save**: Changes automatically persist to local storage
-
+- **Auto-save**: Changes automatically persist to local storage
+  
 - **Transactional**: Operations are atomic and consistent
 
 ### Security Features
 
-- Local authentication required on every app start### Security Features
+- No network requests - fully offline operation
 
-- No network requests - fully offline operation- Local authentication required on every app start
-
-- Data stored locally on device only- No network requests - fully offline operation
-
-- No cloud synchronization or external dependencies- Data stored locally on device only
+- Data stored locally on device only
 
 - No cloud synchronization or external dependencies
 
 
 **Build errors**
 
-- Update Flutter: `flutter upgrade`**Build errors**
+- Update Flutter: `flutter upgrade`
 
-- Clean project: `flutter clean`- Update Flutter: `flutter upgrade`
-
-- Re-run: `flutter pub get`- Clean project: `flutter clean`
+- Clean project: `flutter clean`
 
 - Re-run: `flutter pub get`
 
 **MoneyTracker** - Keep track of who owes what, simply and securely.
-**MoneyTrack** - Keep track of who owes what, simply and securely.
 =======

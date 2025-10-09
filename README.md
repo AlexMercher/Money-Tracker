@@ -2,27 +2,22 @@
 
 An offline-first Flutter money tracking app for managing who owes whom money between you and your friends.
 
-An offline-first Flutter money tracking app for managing who owes whom money between you and your friends.
-
-## Features
-
 ## Features
 
 ### Core Functionality
 
-- **Offline-first storage** using Hive for local data persistence### Core Functionality
+- **Offline-first storage** using Hive for local data persistence
 
 - **Friend management** with transaction history-
 
 - **Balance tracking** with color-coded indicators:- 
 
-  - 🟢 Green: "You Get" (friend owes you money)- **Balance tracking** with color-coded indicators:
+  - 🟢 Green: "You Get" (friend owes you money)
 
-  - 🔴 Red: "You Owe" (you owe friend money)  - 🟢 Green: "You Get" (friend owes you money)
+  - 🔴 Red: "You Owe" (you owe friend money)  
 
-  - 🔘 Grey: "Settled" (balance is zero)  - 🔴 Red: "You Owe" (you owe friend money)
+  - 🔘 Grey: "Settled" (balance is zero)  
 
-  - 🔘 Grey: "Settled" (balance is zero)
 
 ### User Experience
 
@@ -38,7 +33,6 @@ An offline-first Flutter money tracking app for managing who owes whom money bet
 
 - **Confirmation dialogs** for destructive operations
 
-- **Confirmation dialogs** for destructive operations
 
 ### Security & Data
 

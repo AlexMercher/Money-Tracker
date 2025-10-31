@@ -3,7 +3,7 @@ import '../models/friend.dart';
 import '../utils/color_utils.dart';
 
 /// Widget that displays friend balance information with color coding
-class BalanceCard extends StatelessWidget {
+class BalanceCard extends StatefulWidget {
   final Friend friend;
   final VoidCallback? onTap;
 
@@ -14,21 +14,67 @@ class BalanceCard extends StatelessWidget {
   });
 
   @override
+  State<BalanceCard> createState() => _BalanceCardState();
+}
+
+class _BalanceCardState extends State<BalanceCard> with SingleTickerProviderStateMixin {
+  late AnimationController _scaleController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 300), // Increased from 100ms
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.93).animate( // Changed from 0.95 for more visible effect
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    super.dispose();
+  }
+
+  void _handleTapDown(TapDownDetails details) {
+    _scaleController.forward();
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    _scaleController.reverse();
+    widget.onTap?.call();
+  }
+
+  void _handleTapCancel() {
+    _scaleController.reverse();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final balance = friend.netBalance;
-    final balanceColor = ColorUtils.getBalanceColor(balance);
-    final balanceLightColor = ColorUtils.getBalanceLightColor(balance);
+    final balance = widget.friend.netBalance;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final balanceColor = ColorUtils.getBalanceColor(balance, isDark: isDark);
+    final balanceLightColor = ColorUtils.getBalanceLightColor(balance, isDark: isDark);
     final balanceText = ColorUtils.getBalanceText(balance);
     final formattedBalance = ColorUtils.getFormattedBalance(balance);
     final balanceIcon = ColorUtils.getBalanceIcon(balance);
 
-    return Card(
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: InkWell(
-        onTap: onTap,
+      child: GestureDetector(
+        onTapDown: _handleTapDown,
+        onTapUp: _handleTapUp,
+        onTapCancel: _handleTapCancel,
+        child: InkWell(
+        onTap: null, // Handled by GestureDetector
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -46,8 +92,8 @@ class BalanceCard extends StatelessWidget {
                 radius: 24,
                 backgroundColor: balanceLightColor,
                 child: Text(
-                  friend.name.isNotEmpty 
-                      ? friend.name[0].toUpperCase() 
+                  widget.friend.name.isNotEmpty 
+                      ? widget.friend.name[0].toUpperCase() 
                       : '?',
                   style: TextStyle(
                     fontSize: 20,
@@ -65,7 +111,7 @@ class BalanceCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      friend.name,
+                      widget.friend.name,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -74,7 +120,7 @@ class BalanceCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     
                     Text(
-                      '${friend.transactions.length} transaction${friend.transactions.length != 1 ? 's' : ''}',
+                      '${widget.friend.transactions.length} transaction${widget.friend.transactions.length != 1 ? 's' : ''}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                       ),
@@ -133,6 +179,8 @@ class BalanceCard extends StatelessWidget {
           ),
         ),
       ),
+      ),
+    ),
     );
   }
 }

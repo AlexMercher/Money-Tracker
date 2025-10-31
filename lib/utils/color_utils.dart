@@ -2,38 +2,45 @@ import 'package:flutter/material.dart';
 
 /// Utility class for handling money-related color logic
 class ColorUtils {
-  // App color scheme
+  // App color scheme - Light mode
   static const Color positiveColor = Color(0xFF4CAF50); // Green - user gets money
   static const Color negativeColor = Color(0xFFF44336); // Red - user owes money
   static const Color neutralColor = Color(0xFF9E9E9E); // Grey - settled/zero balance
   
-  // Light versions for backgrounds
+  // Light versions for backgrounds - Light mode
   static const Color positiveLightColor = Color(0xFFE8F5E8);
   static const Color negativeLightColor = Color(0xFFFFEBEE);
   static const Color neutralLightColor = Color(0xFFF5F5F5);
 
-  /// Get color based on balance amount
-  /// Positive balance = green (friend owes user)
-  /// Negative balance = red (user owes friend)
-  /// Zero balance = neutral grey
-  static Color getBalanceColor(double balance) {
+  // Dark mode colors
+  static const Color positiveColorDark = Color(0xFF66BB6A); // Lighter green for dark mode
+  static const Color negativeColorDark = Color(0xFFEF5350); // Lighter red for dark mode
+  static const Color neutralColorDark = Color(0xFFBDBDBD); // Lighter grey for dark mode
+  
+  // Dark versions for backgrounds
+  static const Color positiveLightColorDark = Color(0xFF1B5E20);
+  static const Color negativeLightColorDark = Color(0xFFB71C1C);
+  static const Color neutralLightColorDark = Color(0xFF424242);
+
+  /// Get color based on balance amount with theme context
+  static Color getBalanceColor(double balance, {bool isDark = false}) {
     if (balance > 0) {
-      return positiveColor;
+      return isDark ? positiveColorDark : positiveColor;
     } else if (balance < 0) {
-      return negativeColor;
+      return isDark ? negativeColorDark : negativeColor;
     } else {
-      return neutralColor;
+      return isDark ? neutralColorDark : neutralColor;
     }
   }
 
-  /// Get light background color based on balance amount
-  static Color getBalanceLightColor(double balance) {
+  /// Get light background color based on balance amount with theme context
+  static Color getBalanceLightColor(double balance, {bool isDark = false}) {
     if (balance > 0) {
-      return positiveLightColor;
+      return isDark ? positiveLightColorDark : positiveLightColor;
     } else if (balance < 0) {
-      return negativeLightColor;
+      return isDark ? negativeLightColorDark : negativeLightColor;
     } else {
-      return neutralLightColor;
+      return isDark ? neutralLightColorDark : neutralLightColor;
     }
   }
 
@@ -85,14 +92,15 @@ class ColorUtils {
     required Widget child,
     double borderRadius = 8.0,
     EdgeInsets? padding,
+    bool isDark = false,
   }) {
     return Container(
       padding: padding ?? const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: getBalanceLightColor(balance),
+        color: getBalanceLightColor(balance, isDark: isDark),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: getBalanceColor(balance).withOpacity(0.3),
+          color: getBalanceColor(balance, isDark: isDark).withOpacity(0.3),
           width: 1.0,
         ),
       ),

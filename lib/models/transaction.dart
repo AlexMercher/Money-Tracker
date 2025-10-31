@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'split_item.dart';
 
 part 'transaction.g.dart';
 
@@ -20,18 +21,25 @@ class Transaction extends HiveObject {
   @HiveField(4)
   DateTime date;
 
+  @HiveField(5)
+  List<SplitItem>? splitItems;
+
   Transaction({
     required this.id,
     required this.amount,
     required this.type,
     required this.note,
     required this.date,
+    this.splitItems,
   });
 
   /// Returns the amount as positive for lent, negative for borrowed
   double get signedAmount {
     return type == TransactionType.lent ? amount : -amount;
   }
+
+  /// Returns true if this transaction has split items
+  bool get hasSplitItems => splitItems != null && splitItems!.isNotEmpty;
 
   /// Creates a copy of this transaction with given fields replaced
   Transaction copyWith({
@@ -40,6 +48,7 @@ class Transaction extends HiveObject {
     TransactionType? type,
     String? note,
     DateTime? date,
+    List<SplitItem>? splitItems,
   }) {
     return Transaction(
       id: id ?? this.id,
@@ -47,12 +56,13 @@ class Transaction extends HiveObject {
       type: type ?? this.type,
       note: note ?? this.note,
       date: date ?? this.date,
+      splitItems: splitItems ?? this.splitItems,
     );
   }
 
   @override
   String toString() {
-    return 'Transaction(id: $id, amount: $amount, type: $type, note: $note, date: $date)';
+    return 'Transaction(id: $id, amount: $amount, type: $type, note: $note, date: $date, splitItems: ${splitItems?.length ?? 0})';
   }
 }
 

@@ -18,11 +18,49 @@ class TransactionTile extends StatelessWidget {
     this.showActions = true,
   });
 
+  String _getDisplayNote() {
+    if (!transaction.hasSplitItems) {
+      return transaction.note.isNotEmpty ? transaction.note : 'No note';
+    }
+    
+    // Has split items
+    final items = transaction.splitItems!;
+    
+    if (items.length <= 3) {
+      // Show individual items with descriptions and proper signs
+      final itemDescriptions = items.map((item) => 
+        '${item.isNegative ? "-" : ""}${item.amount.toStringAsFixed(0)} ${item.description}'
+      ).join('\n');
+      return itemDescriptions;
+    } else {
+      // More than 3 items: show as (20+30-50) "note"
+      final amounts = items.map((item) => 
+        '${item.isNegative ? "-" : ""}${item.amount.toStringAsFixed(0)}'
+      ).join('+').replaceAll('+-', '-'); // Clean up +- to just -
+      
+      // Extract base note (before any split info or just use first item description)
+      String baseNote = transaction.note;
+      if (baseNote.contains('\n')) {
+        baseNote = baseNote.split('\n').first;
+      }
+      if (baseNote.isEmpty) {
+        baseNote = 'Multiple items';
+      }
+      
+      return '($amounts) "$baseNote"';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isPositive = transaction.type == TransactionType.lent;
-    final color = isPositive ? ColorUtils.positiveColor : ColorUtils.negativeColor;
-    final lightColor = isPositive ? ColorUtils.positiveLightColor : ColorUtils.negativeLightColor;
+    final color = isPositive 
+        ? (isDark ? ColorUtils.positiveColorDark : ColorUtils.positiveColor)
+        : (isDark ? ColorUtils.negativeColorDark : ColorUtils.negativeColor);
+    final lightColor = isPositive 
+        ? (isDark ? ColorUtils.positiveLightColorDark : ColorUtils.positiveLightColor)
+        : (isDark ? ColorUtils.negativeLightColorDark : ColorUtils.negativeLightColor);
     final sign = isPositive ? '+' : '-';
     final typeText = isPositive ? 'Lent' : 'Borrowed';
     final formattedDate = DateFormat('MMM dd, yyyy').format(transaction.date);
@@ -64,14 +102,17 @@ class TransactionTile extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  transaction.note.isNotEmpty ? transaction.note : 'No note',
+                  _getDisplayNote(),
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
-                  maxLines: 1,
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
+                  softWrap: true,
                 ),
               ),
+              
+              const SizedBox(width: 8),
               
               // Amount with sign
               Text(
@@ -116,8 +157,66 @@ class TransactionTile extends StatelessWidget {
                       color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
+                  
+                  // Split indicator
+                  if (transaction.hasSplitItems) ...[
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.receipt_long,
+                      size: 14,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ],
                 ],
               ),
+              
+              // Show split items if present
+              if (transaction.hasSplitItems) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ...transaction.splitItems!.take(3).map((item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              item.description,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                fontSize: 11,
+                              ),
+                            ),
+                            Text(
+                              '${item.isNegative ? "-" : ""}₹${item.amount.toStringAsFixed(2)}',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: item.isNegative ? Colors.red : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                      if (transaction.splitItems!.length > 3)
+                        Text(
+                          '+${transaction.splitItems!.length - 3} more items',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontSize: 10,
+                            fontStyle: FontStyle.italic,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
           

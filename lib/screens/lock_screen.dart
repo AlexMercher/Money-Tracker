@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/auth_service.dart';
+import '../utils/page_transitions.dart';
 import 'home_screen.dart';
 
 /// Screen that handles authentication before allowing access to the app
@@ -40,7 +41,7 @@ class _LockScreenState extends State<LockScreen> {
         // No authentication method available, allow access
         if (mounted) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            PageTransitions.fade(const HomeScreen()),
           );
         }
         return;
@@ -51,7 +52,7 @@ class _LockScreenState extends State<LockScreen> {
       if (isAuthenticated && mounted) {
         // Navigate to home screen
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          PageTransitions.fade(const HomeScreen()),
         );
       } else if (mounted) {
         setState(() {
@@ -84,7 +85,7 @@ class _LockScreenState extends State<LockScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -221,7 +222,7 @@ class _LockScreenState extends State<LockScreen> {
                 TextButton(
                   onPressed: () {
                     Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => const HomeScreen()),
+                      PageTransitions.fade(const HomeScreen()),
                     );
                   },
                   child: const Text('Skip Authentication (Debug)'),

@@ -1,8 +1,12 @@
 # MoneyTrack
 
-[![Download APK](https://img.shields.io/github/v/release/AlexMercher/Money-Tracker?label=Download%20APK&color=success)](https://github.com/AlexMercher/Money-Tracker/releases/latest)
+### Download (v1.1.0)
+- [arm64-v8a](https://github.com/AlexMercher/Money-Tracker/releases/download/v1.1.0/app-arm64-v8a-release.apk)
+- [armeabi-v7a](https://github.com/AlexMercher/Money-Tracker/releases/download/v1.1.0/app-armeabi-v7a-release.apk)
+- [x86_64](https://github.com/AlexMercher/Money-Tracker/releases/download/v1.1.0/app-x86_64-release.apk)
 
 An offline-first Flutter money tracking app for managing who owes whom money between you and your friends.
+Licensed under CC BY-NC 4.0 - Credit to Himanshu Ranjan.
 
 ## Features
 
@@ -19,6 +23,8 @@ An offline-first Flutter money tracking app for managing who owes whom money bet
 - **Transaction grouping** for duplicate transactions with expandable details
 - **Read-only transaction view** showing all fields (amount, type, date, note) when tapped
 - **Biometric authentication** with PIN/password fallback for app security
+- **Shadow ledger** for accurate budget tracking
+- **Cash ledger** for tracking physical cash loans
 
 ### User Experience
 - **Material 3 design** with light/dark theme support (default: light mode)
@@ -116,3 +122,18 @@ An offline-first Flutter money tracking app for managing who owes whom money bet
 - Authentication required for sensitive operations (clear debt, delete data)
 
 **MoneyTrack** - Keep track of who owes what, simply and securely.
+
+## New Features in v1.1.0
+- **Corrected budget engine** using mathematically validated delta logic for all balance transitions
+- **Shadow ledger enhancements** ensuring accurate monthly summaries and 12-month rolling history retention
+- **Self history stability** preventing truncation during split-transaction operations
+- **Improved pie chart** now showing only pure self-expenses with clean category names
+- **Weekly line chart update** including actual money-out (self + lent + borrowed exposures)
+- **Auto-scroll enhancement** ensuring operator row visibility when entering calculation expressions
+- **Cash ledger refinement** removing “Self” from borrow/repay options to avoid invalid interactions
+- **Label simplification** (“Borrow” / “Lend”) preventing wrapping on small screens
+- **Dark mode improvements** for all Settings headers and inline totals
+- **Stronger authentication flow** ensuring verification *before* sensitive actions like settle or clear
+- **Month-boundary cleanup** automatically pruning data older than 12 months
+
+

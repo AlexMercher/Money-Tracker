@@ -74,10 +74,10 @@ class AuthService {
   }
 
   /// Authenticate user using biometrics or device credentials
-  static Future<bool> authenticate() async {
+  static Future<bool> authenticate({String localizedReason = 'Please authenticate to access MoneyTrack'}) async {
     try {
       final bool isAuthenticated = await _localAuth.authenticate(
-        localizedReason: 'Please authenticate to access MoneyTrack',
+        localizedReason: localizedReason,
         options: const AuthenticationOptions(
           biometricOnly: false, // Allow PIN/password as fallback
           stickyAuth: true, // Keep auth state during app lifecycle

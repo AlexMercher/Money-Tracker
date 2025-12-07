@@ -24,6 +24,7 @@ class FriendAutocomplete extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Autocomplete<String>(
+      displayStringForOption: (String option) => option,
       optionsBuilder: (TextEditingValue textEditingValue) {
         if (textEditingValue.text.trim().isEmpty) {
           return const Iterable<String>.empty();

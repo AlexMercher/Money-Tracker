@@ -9,6 +9,7 @@ class TransactionTile extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final bool showActions;
+  final bool isSelf;
 
   const TransactionTile({
     super.key,
@@ -16,6 +17,7 @@ class TransactionTile extends StatelessWidget {
     this.onEdit,
     this.onDelete,
     this.showActions = true,
+    this.isSelf = false,
   });
 
   String _getDisplayNote() {
@@ -55,14 +57,25 @@ class TransactionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isPositive = transaction.type == TransactionType.lent;
-    final color = isPositive 
-        ? (isDark ? ColorUtils.positiveColorDark : ColorUtils.positiveColor)
-        : (isDark ? ColorUtils.negativeColorDark : ColorUtils.negativeColor);
-    final lightColor = isPositive 
-        ? (isDark ? ColorUtils.positiveLightColorDark : ColorUtils.positiveLightColor)
-        : (isDark ? ColorUtils.negativeLightColorDark : ColorUtils.negativeLightColor);
-    final sign = isPositive ? '+' : '-';
-    final typeText = isPositive ? 'Lent' : 'Borrowed';
+    
+    // For Self: Lent = Spent (Negative/Red), Borrowed = Gained (Positive/Green)
+    // For Friends: Lent = You gave (Positive/Green), Borrowed = You took (Negative/Red)
+    final isGreen = isSelf ? !isPositive : isPositive;
+    
+    // Dark Mode Colors Fix:
+    // Use soft/red accent via colorScheme.errorContainer
+    // Use soft/green accent via colorScheme.tertiaryContainer
+    final color = isGreen 
+        ? (isDark ? Theme.of(context).colorScheme.onTertiaryContainer : ColorUtils.positiveColor)
+        : (isDark ? Theme.of(context).colorScheme.onErrorContainer : ColorUtils.negativeColor);
+    final lightColor = isGreen 
+        ? (isDark ? Theme.of(context).colorScheme.tertiaryContainer : ColorUtils.positiveLightColor)
+        : (isDark ? Theme.of(context).colorScheme.errorContainer : ColorUtils.negativeLightColor);
+    
+    final sign = isGreen ? '+' : '-';
+    final typeText = isSelf 
+        ? (isPositive ? 'Spent' : 'Gained')
+        : (isPositive ? 'Lend' : 'Borrow');
     final formattedDate = DateFormat('MMM dd, yyyy').format(transaction.date);
     
     return Card(
@@ -92,7 +105,7 @@ class TransactionTile extends StatelessWidget {
             ),
             child: Icon(
               isPositive ? Icons.arrow_downward : Icons.arrow_upward,
-              color: color,
+              color: Theme.of(context).colorScheme.onSurface,
               size: 20,
             ),
           ),
@@ -133,17 +146,22 @@ class TransactionTile extends StatelessWidget {
               Row(
                 children: [
                   // Transaction type
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: lightColor,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      typeText,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w500,
+                  IntrinsicWidth(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: lightColor,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        typeText,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.fade,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
@@ -224,29 +242,12 @@ class TransactionTile extends StatelessWidget {
           trailing: showActions ? PopupMenuButton<String>(
             onSelected: (value) {
               switch (value) {
-                case 'edit':
-                  onEdit?.call();
-                  break;
                 case 'delete':
                   onDelete?.call();
                   break;
               }
             },
             itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.edit,
-                      size: 18,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text('Edit'),
-                  ],
-                ),
-              ),
               PopupMenuItem(
                 value: 'delete',
                 child: Row(

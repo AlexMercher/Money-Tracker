@@ -14,10 +14,18 @@ class User extends HiveObject {
   @HiveField(2)
   String upiId;
 
+  @HiveField(3, defaultValue: 0.0)
+  double monthlyBudget;
+
+  @HiveField(4, defaultValue: false)
+  bool carryBudgetToNextMonth;
+
   User({
     required this.name,
     required this.phoneNumber,
     required this.upiId,
+    this.monthlyBudget = 0.0,
+    this.carryBudgetToNextMonth = false,
   });
 
   /// Creates a copy of this user with given fields replaced
@@ -25,16 +33,20 @@ class User extends HiveObject {
     String? name,
     String? phoneNumber,
     String? upiId,
+    double? monthlyBudget,
+    bool? carryBudgetToNextMonth,
   }) {
     return User(
       name: name ?? this.name,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       upiId: upiId ?? this.upiId,
+      monthlyBudget: monthlyBudget ?? this.monthlyBudget,
+      carryBudgetToNextMonth: carryBudgetToNextMonth ?? this.carryBudgetToNextMonth,
     );
   }
 
   @override
   String toString() {
-    return 'User(name: $name, phoneNumber: $phoneNumber, upiId: $upiId)';
+    return 'User(name: $name, phoneNumber: $phoneNumber, upiId: $upiId, budget: $monthlyBudget, carryOver: $carryBudgetToNextMonth)';
   }
 }

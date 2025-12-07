@@ -56,8 +56,14 @@ class _BalanceCardState extends State<BalanceCard> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     final balance = widget.friend.netBalance;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final balanceColor = ColorUtils.getBalanceColor(balance, isDark: isDark);
-    final balanceLightColor = ColorUtils.getBalanceLightColor(balance, isDark: isDark);
+    
+    // Dark Mode Colors Fix
+    final balanceColor = ColorUtils.getFriendAccentColor(context, balance);
+
+    final cardBackgroundColor = isDark 
+        ? const Color(0xFF1E1E22) // Dark mode card background
+        : ColorUtils.getBalanceLightColor(balance, isDark: false);
+        
     final balanceText = ColorUtils.getBalanceText(balance);
     final formattedBalance = ColorUtils.getFormattedBalance(balance);
     final balanceIcon = ColorUtils.getBalanceIcon(balance);
@@ -79,9 +85,10 @@ class _BalanceCardState extends State<BalanceCard> with SingleTickerProviderStat
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
+            color: cardBackgroundColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: balanceColor.withOpacity(0.3),
+              color: isDark ? balanceColor.withOpacity(0.5) : balanceColor.withOpacity(0.3),
               width: 1,
             ),
           ),
@@ -90,7 +97,7 @@ class _BalanceCardState extends State<BalanceCard> with SingleTickerProviderStat
               // Friend avatar
               CircleAvatar(
                 radius: 24,
-                backgroundColor: balanceLightColor,
+                backgroundColor: isDark ? balanceColor.withOpacity(0.2) : Theme.of(context).colorScheme.surface,
                 child: Text(
                   widget.friend.name.isNotEmpty 
                       ? widget.friend.name[0].toUpperCase() 
@@ -114,6 +121,7 @@ class _BalanceCardState extends State<BalanceCard> with SingleTickerProviderStat
                       widget.friend.name,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
+                        color: isDark ? Theme.of(context).colorScheme.onSurface : Colors.black87,
                       ),
                     ),
                     
@@ -122,7 +130,7 @@ class _BalanceCardState extends State<BalanceCard> with SingleTickerProviderStat
                     Text(
                       '${widget.friend.transactions.length} transaction${widget.friend.transactions.length != 1 ? 's' : ''}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        color: isDark ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                       ),
                     ),
                   ],

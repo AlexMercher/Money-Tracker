@@ -7,7 +7,9 @@ import '../models/transaction_group.dart';
 import '../services/hive_service.dart';
 import '../services/pdf_service.dart';
 import '../services/auth_service.dart';
+import '../logic/friend_logic.dart';
 import '../widgets/transaction_group_tile.dart';
+import '../widgets/transaction_tile.dart';
 import '../utils/color_utils.dart';
 import '../utils/page_transitions.dart';
 import 'add_transaction_screen.dart';
@@ -32,10 +34,16 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
   bool _showSearchBar = false;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  late FriendLogic _friendLogic;
 
   @override
   void initState() {
     super.initState();
+    _friendLogic = FriendLogic(auth: AppAuthController());
+    _friendLogic.showConfirmDialog = _showConfirmDialogWrapper;
+    _friendLogic.clearVisibleHistory = _performClearHistory;
+    _friendLogic.settleFriendBalance = _performSettlement;
+
     _friend = widget.friend;
     _refreshFriend();
     _searchController.addListener(() {
@@ -60,49 +68,33 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
     }
   }
 
-  Future<void> _showClearHistoryDialog() async {
-    if (!_friend.isSettled) return;
-
-    // Require authentication first
-    final isAuthenticated = await AuthService.authenticate();
-    if (!isAuthenticated) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Authentication required to clear history'),
-        ),
-      );
-      return;
-    }
-
-    if (!mounted) return;
-
-    final result = await showDialog<bool>(
+  Future<bool> _showConfirmDialogWrapper({required String title, required String message}) async {
+    if (!mounted) return false;
+    return await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear History'),
-        content: const Text(
-          'Balance is settled. Do you want to clear the transaction history? This action cannot be undone.',
-        ),
+        title: Text(title),
+        content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Keep History'),
+            child: const Text('Cancel'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Clear'),
+            child: const Text('Confirm'),
           ),
         ],
       ),
-    );
-
-    if (result == true) {
-      await _clearHistory();
-    }
+    ) ?? false;
   }
 
-  Future<void> _clearHistory() async {
+  Future<void> _showClearHistoryDialog() async {
+    if (!_friend.isSettled) return;
+    await _friendLogic.onClearHistoryPressed();
+  }
+
+  Future<void> _performClearHistory() async {
     setState(() {
       _isLoading = true;
     });
@@ -137,7 +129,7 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
   void _showTransactionDetails(Transaction transaction) {
     final isPositive = transaction.type == TransactionType.lent;
     final color = isPositive ? ColorUtils.positiveColor : ColorUtils.negativeColor;
-    final typeText = isPositive ? 'Lent' : 'Borrowed';
+    final typeText = isPositive ? 'Lend' : 'Borrow';
     final sign = isPositive ? '+' : '-';
     
     showDialog(
@@ -332,25 +324,7 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
   }
 
   Future<void> _clearDebt() async {
-    // Require authentication if enabled
-    final authEnabled = await AuthService.isAuthEnabled();
-    if (authEnabled) {
-      final authenticated = await AuthService.authenticate();
-      if (!authenticated) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Authentication required to clear debt'),
-            ),
-          );
-        }
-        return;
-      }
-    }
-
-    final balance = _friend.netBalance;
-    
-    if (balance == 0) {
+    if (_friend.netBalance == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Balance is already settled'),
@@ -358,113 +332,86 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
       );
       return;
     }
+    await _friendLogic.onSettleBalancePressed();
+  }
 
-    final isOwed = balance > 0;
-    final balanceText = ColorUtils.getFormattedBalance(balance);
-    final settleMessage = isOwed
-        ? '${_friend.name} will pay you $balanceText'
-        : 'You will pay ${_friend.name} ${ColorUtils.getFormattedBalance(balance.abs())}';
+  Future<void> _performSettlement() async {
+    setState(() {
+      _isLoading = true;
+    });
 
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear Debt'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(settleMessage),
-            const SizedBox(height: 16),
-            const Text(
-              'This will add a settling transaction to make the balance zero.',
-              style: TextStyle(fontSize: 14),
+    try {
+      final balance = _friend.netBalance;
+      final isOwed = balance > 0;
+      // Create a settling transaction with opposite amount
+      final settlingAmount = balance.abs();
+      final settlingType = isOwed 
+          ? TransactionType.borrowed // They're paying us back
+          : TransactionType.lent;     // We're paying them back
+
+      final settlingTransaction = Transaction(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        amount: settlingAmount,
+        type: settlingType,
+        note: 'Debt settled',
+        date: DateTime.now(),
+      );
+
+      await HiveService.addTransaction(_friend.id, settlingTransaction);
+      await _refreshFriend();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Debt cleared successfully!'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'UNDO',
+              textColor: Colors.white,
+              onPressed: () async {
+                await HiveService.deleteTransaction(_friend.id, settlingTransaction.id);
+                await _refreshFriend();
+              },
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Settle Balance'),
-          ),
-        ],
-      ),
-    );
-
-    if (result == true) {
-      setState(() {
-        _isLoading = true;
-      });
-
-      try {
-        // Create a settling transaction with opposite amount
-        final settlingAmount = balance.abs();
-        final settlingType = isOwed 
-            ? TransactionType.borrowed // They're paying us back
-            : TransactionType.lent;     // We're paying them back
-
-        final settlingTransaction = Transaction(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          amount: settlingAmount,
-          type: settlingType,
-          note: 'Debt settled',
-          date: DateTime.now(),
         );
 
-        await HiveService.addTransaction(_friend.id, settlingTransaction);
-        await _refreshFriend();
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Debt cleared successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-
-          // Show clear history dialog after settling
-          if (_friend.isSettled && _friend.transactions.isNotEmpty) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _showClearHistoryDialog();
-            });
-          }
+        // Show clear history dialog after settling
+        if (_friend.isSettled && _friend.transactions.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _showClearHistoryDialog();
+          });
         }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error clearing debt: $e'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-        }
-      } finally {
-        setState(() {
-          _isLoading = false;
-        });
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error clearing debt: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   Future<void> _deleteFriend() async {
-    // Require authentication if enabled
-    final authEnabled = await AuthService.isAuthEnabled();
-    if (authEnabled) {
-      final authenticated = await AuthService.authenticate();
-      if (!authenticated) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Authentication required to delete friend.'),
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-        return;
+    // Require authentication
+    final authOk = await _friendLogic.auth.requestAuth();
+    if (!authOk) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Authentication required to delete friend.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
       }
+      return;
     }
     
     final result = await showDialog<bool>(
@@ -524,22 +471,9 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
   }
 
   Future<void> _deleteTransaction(Transaction transaction) async {
-    // Require authentication if enabled
-    final authEnabled = await AuthService.isAuthEnabled();
-    if (authEnabled) {
-      final authenticated = await AuthService.authenticate();
-      if (!authenticated) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Authentication required to delete transaction.'),
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-        return;
-      }
-    }
+    // Require authentication
+    final authOk = await _friendLogic.auth.requestAuth();
+    if (!authOk) return;
     
     final result = await showDialog<bool>(
       context: context,
@@ -564,13 +498,23 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
 
     if (result == true) {
       try {
+        // Store for undo
+        final deletedTransaction = transaction;
+        
         await HiveService.deleteTransaction(_friend.id, transaction.id);
         await _refreshFriend();
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Transaction deleted'),
+            SnackBar(
+              content: const Text('Transaction deleted'),
+              action: SnackBarAction(
+                label: 'UNDO',
+                onPressed: () async {
+                  await HiveService.addTransaction(_friend.id, deletedTransaction);
+                  await _refreshFriend();
+                },
+              ),
             ),
           );
 
@@ -599,14 +543,36 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
   }
 
   Widget _buildBalanceHeader() {
+    if (_friend.id == 'self') {
+      return _buildSelfOverview();
+    }
+
     final balance = _friend.netBalance;
-    final balanceColor = ColorUtils.getBalanceColor(balance);
-    final balanceText = ColorUtils.getBalanceText(balance);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Use new color helper
+    final balanceColor = ColorUtils.getFriendAccentColor(context, balance);
+    
+    String balanceText = ColorUtils.getBalanceText(balance);
+    
     final formattedBalance = ColorUtils.getFormattedBalance(balance);
     final balanceIcon = ColorUtils.getBalanceIcon(balance);
 
-    return ColorUtils.createBalanceContainer(
-      balance: balance,
+    // Custom background color for dark mode
+    final bgColor = isDark 
+        ? const Color(0xFF1E1E22) 
+        : ColorUtils.getBalanceLightColor(balance, isDark: false);
+
+    return Container(
+      padding: const EdgeInsets.all(24.0),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? balanceColor.withOpacity(0.5) : balanceColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
       child: Column(
         children: [
           // Friend avatar and name
@@ -629,6 +595,7 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
             _friend.name,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black,
             ),
           ),
           
@@ -669,6 +636,154 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSelfOverview() {
+    double totalSpent = 0;
+    double totalGained = 0;
+
+    for (var t in _friend.transactions) {
+      if (t.type == TransactionType.lent) {
+        totalSpent += t.amount;
+      } else {
+        totalGained += t.amount;
+      }
+    }
+
+    double totalLent = 0;
+    double totalBorrowed = 0;
+    final allFriends = HiveService.getAllFriends();
+    for (var f in allFriends) {
+      if (f.id == 'self') continue;
+      if (f.netBalance > 0) {
+        totalLent += f.netBalance;
+      } else {
+        totalBorrowed += f.netBalance.abs();
+      }
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Card(
+      margin: const EdgeInsets.all(16),
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Text(
+              'Overview',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        'Total Spent',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '₹${totalSpent.toStringAsFixed(0)}',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: isDark ? ColorUtils.negativeColorDark : ColorUtils.negativeColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  height: 40,
+                  width: 1,
+                  color: Theme.of(context).dividerColor,
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        'Total Gained',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '₹${totalGained.toStringAsFixed(0)}',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: isDark ? ColorUtils.positiveColorDark : ColorUtils.positiveColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const Divider(),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        'Lend (Friends)',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '₹${totalLent.toStringAsFixed(0)}',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  height: 40,
+                  width: 1,
+                  color: Theme.of(context).dividerColor,
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        'Borrow (Friends)',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '₹${totalBorrowed.toStringAsFixed(0)}',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Colors.purple,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -740,6 +855,10 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
     }
 
     // Group transactions
+    if (_friend.id == 'self') {
+      return _buildSelfTransactionsList(sortedTransactions);
+    }
+
     final groups = TransactionGroup.groupTransactions(sortedTransactions);
     TransactionGroup.sortGroupsByDate(groups);
 
@@ -755,6 +874,55 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
           group: group,
           onDelete: !group.isGrouped ? () => _deleteTransaction(group.transactions.first) : null,
           onTransactionTap: !group.isGrouped ? _showTransactionDetails : null,
+          isSelf: _friend.id == 'self',
+        );
+      },
+    );
+  }
+
+  Widget _buildSelfTransactionsList(List<Transaction> transactions) {
+    // Group by month
+    final Map<String, List<Transaction>> groupedTransactions = {};
+    for (var transaction in transactions) {
+      final monthKey = DateFormat('MMMM yyyy').format(transaction.date);
+      if (!groupedTransactions.containsKey(monthKey)) {
+        groupedTransactions[monthKey] = [];
+      }
+      groupedTransactions[monthKey]!.add(transaction);
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: groupedTransactions.length,
+      itemBuilder: (context, index) {
+        final monthKey = groupedTransactions.keys.elementAt(index);
+        final monthTransactions = groupedTransactions[monthKey]!;
+
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  monthKey,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              ...monthTransactions.map((transaction) => TransactionTile(
+                transaction: transaction,
+                isSelf: true,
+                onDelete: () => _deleteTransaction(transaction),
+              )),
+            ],
+          ),
         );
       },
     );
@@ -974,13 +1142,14 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
               tooltip: 'Export to PDF',
             ),
           
-          if (_friend.isSettled && _friend.transactions.isNotEmpty)
+          if (_friend.isSettled && _friend.transactions.isNotEmpty && _friend.id != 'self')
             TextButton.icon(
               onPressed: _showClearHistoryDialog,
               icon: const Icon(Icons.clear_all),
               label: const Text('Clear'),
             ),
           
+          if (_friend.id != 'self')
           PopupMenuButton<String>(
             onSelected: (value) {
               switch (value) {
@@ -1105,5 +1274,16 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+}class AppAuthController implements AuthController {
+  @override
+  Future<bool> requestAuth() async {
+    try {
+      final authEnabled = await AuthService.isAuthEnabled();
+      if (!authEnabled) return true;
+      return await AuthService.authenticate();
+    } catch (e) {
+      return false;
+    }
   }
 }

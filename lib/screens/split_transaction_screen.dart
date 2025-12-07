@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../models/friend.dart';
 import '../models/friend_split.dart';
 import '../models/transaction.dart';
+import '../models/split_item.dart';
 import '../services/hive_service.dart';
 import '../utils/expression_parser.dart';
 
@@ -20,12 +20,16 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
   final _totalAmountController = TextEditingController();
   final _noteController = TextEditingController();
   final List<TextEditingController> _amountControllers = [];
+  final List<TextEditingController> _friendControllers = [];
+  final List<FocusNode> _friendFocusNodes = [];
   
   DateTime _selectedDate = DateTime.now();
   List<Friend> _allFriends = [];
   List<FriendSplit> _friendSplits = [];
   bool _isLoading = false;
   bool _isSplitEqual = true;
+  bool _showOperatorButtons = false;
+  final FocusNode _totalAmountFocusNode = FocusNode();
   double? _totalAmount;
   double? _myShare;
 
@@ -34,31 +38,52 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
     super.initState();
     _loadFriends();
     _addInitialFriendSplit();
+    _totalAmountFocusNode.addListener(() {
+      setState(() {
+        _showOperatorButtons = _totalAmountFocusNode.hasFocus;
+        if (!_totalAmountFocusNode.hasFocus) {
+           _updateTotalAmount();
+        }
+      });
+    });
   }
 
   @override
   void dispose() {
+    _totalAmountFocusNode.dispose();
     _totalAmountController.dispose();
     _noteController.dispose();
     for (var controller in _amountControllers) {
       controller.dispose();
     }
+    for (var controller in _friendControllers) {
+      controller.dispose();
+    }
+    for (var node in _friendFocusNodes) {
+      node.dispose();
+    }
     super.dispose();
   }
 
   void _loadFriends() {
-    _allFriends = HiveService.getAllFriends();
+    _allFriends = HiveService.getAllFriends()
+        .where((f) => f.id != 'cash_ledger' && f.id != 'self') // Exclude cash ledger and self
+        .toList();
   }
 
   void _addInitialFriendSplit() {
     _friendSplits.add(FriendSplit(friendName: '', amount: 0));
     _amountControllers.add(TextEditingController());
+    _friendControllers.add(TextEditingController());
+    _friendFocusNodes.add(FocusNode());
   }
 
   void _addFriendSplit() {
     setState(() {
       _friendSplits.add(FriendSplit(friendName: '', amount: 0));
       _amountControllers.add(TextEditingController());
+      _friendControllers.add(TextEditingController());
+      _friendFocusNodes.add(FocusNode());
     });
   }
 
@@ -68,6 +93,10 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
         _friendSplits.removeAt(index);
         _amountControllers[index].dispose();
         _amountControllers.removeAt(index);
+        _friendControllers[index].dispose();
+        _friendControllers.removeAt(index);
+        _friendFocusNodes[index].dispose();
+        _friendFocusNodes.removeAt(index);
         _calculateSplit();
       });
     }
@@ -102,24 +131,22 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
 
     if (_isSplitEqual) {
       // Equal split among all friends + me
-      final validFriends = _friendSplits.where((fs) => fs.friendName.trim().isNotEmpty).length;
-      if (validFriends > 0) {
-        final totalPeople = validFriends + 1; // friends + me
-        final perPerson = _totalAmount! / totalPeople;
-        
-        bool needsUpdate = false;
-        for (var split in _friendSplits) {
-          if (split.friendName.trim().isNotEmpty && split.amount != perPerson) {
-            split.amount = perPerson;
-            needsUpdate = true;
-          }
+      // Count all split rows as participants, even if name is empty yet
+      final totalPeople = _friendSplits.length + 1; // friends + me
+      final perPerson = _totalAmount! / totalPeople;
+      
+      bool needsUpdate = false;
+      for (var split in _friendSplits) {
+        if (split.amount != perPerson) {
+          split.amount = perPerson;
+          needsUpdate = true;
         }
-        
-        if (_myShare != perPerson || needsUpdate) {
-          setState(() {
-            _myShare = perPerson;
-          });
-        }
+      }
+      
+      if (_myShare != perPerson || needsUpdate) {
+        setState(() {
+          _myShare = perPerson;
+        });
       }
     } else {
       // Calculate remaining for me
@@ -135,11 +162,14 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
   }
 
   Future<void> _selectDate() async {
+    final now = DateTime.now();
+    final oneYearAgo = DateTime(now.year - 1, now.month, now.day);
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
+      firstDate: oneYearAgo,
+      lastDate: now,
     );
     
     if (picked != null && picked != _selectedDate) {
@@ -147,6 +177,59 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
         _selectedDate = picked;
       });
     }
+  }
+
+  Widget _buildMainOperatorButton(String operator, {bool isSpecial = false}) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: ElevatedButton(
+          onPressed: () {
+            if (operator == 'C') {
+              _totalAmountController.clear();
+              setState(() {
+                _totalAmount = null;
+                _calculateSplit();
+              });
+            } else {
+              final text = _totalAmountController.text;
+              final selection = _totalAmountController.selection;
+              
+              // Handle case where selection is invalid (e.g. -1)
+              final start = selection.start >= 0 ? selection.start : text.length;
+              final end = selection.end >= 0 ? selection.end : text.length;
+              
+              final newText = text.replaceRange(start, end, operator);
+              _totalAmountController.value = TextEditingValue(
+                text: newText,
+                selection: TextSelection.collapsed(
+                  offset: start + operator.length,
+                ),
+              );
+              _updateTotalAmount();
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            backgroundColor: isSpecial
+                ? Theme.of(context).colorScheme.error
+                : Theme.of(context).colorScheme.surfaceVariant,
+            foregroundColor: isSpecial
+                ? Theme.of(context).colorScheme.onError
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+            elevation: 0,
+            minimumSize: const Size(0, 32),
+          ),
+          child: Text(
+            operator,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildOperatorButton(String operator, int friendIndex, {bool isSpecial = false}) {
@@ -190,10 +273,10 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             backgroundColor: isSpecial
                 ? Theme.of(context).colorScheme.error
-                : Theme.of(context).primaryColor.withOpacity(0.1),
+                : Theme.of(context).colorScheme.surfaceVariant,
             foregroundColor: isSpecial
-                ? Colors.white
-                : Theme.of(context).primaryColor,
+                ? Theme.of(context).colorScheme.onError
+                : Theme.of(context).colorScheme.onSurfaceVariant,
             elevation: 0,
             minimumSize: const Size(0, 32),
           ),
@@ -332,13 +415,23 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
         return;
       }
 
-      // Build split info showing all friends involved
-      final friendsSplitInfo = validSplits.map((fs) => 
-        '${fs.friendName.trim()} (Rs. ${fs.amount.toStringAsFixed(2)})'
-      ).toList();
-      friendsSplitInfo.add('You (Rs. ${_myShare!.toStringAsFixed(2)})');
+      // Build split info items for storage
+      final List<SplitItem> splitItems = [];
       
-      final splitDetailsNote = '\nSplit of Rs. ${_totalAmount!.toStringAsFixed(2)} between: ${friendsSplitInfo.join(', ')}';
+      for (var fs in validSplits) {
+        splitItems.add(SplitItem(
+          amount: fs.amount,
+          description: fs.friendName.trim(),
+        ));
+      }
+      
+      // Add self share to split items
+      if (_myShare != null && _myShare! > 0) {
+        splitItems.add(SplitItem(
+          amount: _myShare!,
+          description: 'You (My Share)',
+        ));
+      }
 
       // Process transactions
       for (var split in validSplits) {
@@ -356,16 +449,41 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
           await HiveService.saveFriend(targetFriend);
         }
 
-        // Create transaction for this friend with full split details
+        // Create transaction for this friend with split items
         final transaction = Transaction(
           id: DateTime.now().millisecondsSinceEpoch.toString() + targetFriend.id.hashCode.toString(),
           amount: split.amount,
           type: TransactionType.lent, // You paid, so you lent money
-          note: '$baseNote$splitDetailsNote',
+          note: baseNote, // Clean note
           date: _selectedDate,
+          splitItems: List.from(splitItems), // Store full split details
         );
 
         await HiveService.addTransaction(targetFriend.id, transaction);
+      }
+
+      // Add Self Transaction for my share
+      if (_myShare != null && _myShare! > 0) {
+        // Check if 'self' friend exists, if not create it
+        // FIX: Use HiveService.getFriend directly to avoid overwriting existing self history
+        // with a new empty friend object if _allFriends doesn't contain it.
+        Friend? selfFriend = HiveService.getFriend('self');
+        
+        if (selfFriend == null) {
+           selfFriend = Friend(id: 'self', name: 'Self');
+           await HiveService.saveFriend(selfFriend);
+        }
+
+        final selfTransaction = Transaction(
+          id: DateTime.now().millisecondsSinceEpoch.toString() + 'self_share',
+          amount: _myShare!,
+          type: TransactionType.lent, // Spent
+          note: '$baseNote (My Share)',
+          date: _selectedDate,
+          splitItems: List.from(splitItems), // Store full split details
+        );
+        
+        await HiveService.addTransaction('self', selfTransaction);
       }
 
       if (mounted) {
@@ -513,11 +631,12 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _totalAmountController,
+                      focusNode: _totalAmountFocusNode,
                       decoration: InputDecoration(
                         labelText: 'Total Amount Paid',
                         prefixText: '₹',
                         border: const OutlineInputBorder(),
-                        hintText: 'e.g., 500',
+                        hintText: 'e.g., 500 or 100+200',
                         helperText: 'Enter the total bill amount',
                         suffixIcon: _totalAmount != null
                             ? Padding(
@@ -525,7 +644,7 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
                                 child: Text(
                                   '= ₹${_totalAmount!.toStringAsFixed(2)}',
                                   style: TextStyle(
-                                    color: Theme.of(context).primaryColor,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -535,6 +654,20 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       onChanged: (_) => _updateTotalAmount(),
                     ),
+                    
+                    if (_showOperatorButtons) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildMainOperatorButton('+'),
+                          _buildMainOperatorButton('-'),
+                          _buildMainOperatorButton('*'),
+                          _buildMainOperatorButton('/'),
+                          _buildMainOperatorButton('C', isSpecial: true),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -687,9 +820,10 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
                                 Row(
                                   children: [
                                     Expanded(
-                                      child: Autocomplete<String>(
+                                      child: RawAutocomplete<String>(
                                         key: ValueKey('friend_$index'),
-                                        initialValue: TextEditingValue(text: split.friendName),
+                                        focusNode: _friendFocusNodes[index],
+                                        textEditingController: _friendControllers[index],
                                         optionsBuilder: (TextEditingValue textEditingValue) {
                                           if (textEditingValue.text.isEmpty) {
                                             return const Iterable<String>.empty();
@@ -707,11 +841,6 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
                                           });
                                         },
                                         fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                                          // Update controller if initialValue changes
-                                          if (controller.text != split.friendName) {
-                                            controller.text = split.friendName;
-                                          }
-                                          
                                           return TextFormField(
                                             controller: controller,
                                             focusNode: focusNode,
@@ -747,6 +876,31 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
                                             onFieldSubmitted: (value) => onFieldSubmitted(),
                                           );
                                         },
+                                        optionsViewBuilder: (context, onSelected, options) {
+                                          return Align(
+                                            alignment: Alignment.topLeft,
+                                            child: Material(
+                                              elevation: 4.0,
+                                              child: SizedBox(
+                                                width: 250,
+                                                child: ListView.builder(
+                                                  padding: EdgeInsets.zero,
+                                                  shrinkWrap: true,
+                                                  itemCount: options.length,
+                                                  itemBuilder: (BuildContext context, int index) {
+                                                    final String option = options.elementAt(index);
+                                                    return ListTile(
+                                                      title: Text(option),
+                                                      onTap: () {
+                                                        onSelected(option);
+                                                      },
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ),
                                     
@@ -756,13 +910,13 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                         decoration: BoxDecoration(
-                                          color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                          color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Text(
                                           '₹${split.amount.toStringAsFixed(2)}',
                                           style: TextStyle(
-                                            color: Theme.of(context).primaryColor,
+                                            color: Theme.of(context).colorScheme.onPrimaryContainer,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
@@ -772,13 +926,13 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                         decoration: BoxDecoration(
-                                          color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                          color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Text(
                                           '₹${split.amount.toStringAsFixed(2)}',
                                           style: TextStyle(
-                                            color: Theme.of(context).primaryColor,
+                                            color: Theme.of(context).colorScheme.onPrimaryContainer,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
@@ -811,7 +965,7 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
                                               child: Text(
                                                 '=${split.amount.toStringAsFixed(0)}',
                                                 style: TextStyle(
-                                                  color: Theme.of(context).primaryColor,
+                                                  color: Theme.of(context).colorScheme.primary,
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 12,
                                                 ),

@@ -24,6 +24,9 @@ class Transaction extends HiveObject {
   @HiveField(5)
   List<SplitItem>? splitItems;
 
+  @HiveField(6)
+  DateTime? ledgerDate;
+
   Transaction({
     required this.id,
     required this.amount,
@@ -31,6 +34,7 @@ class Transaction extends HiveObject {
     required this.note,
     required this.date,
     this.splitItems,
+    this.ledgerDate,
   });
 
   /// Returns the amount as positive for lent, negative for borrowed
@@ -49,6 +53,7 @@ class Transaction extends HiveObject {
     String? note,
     DateTime? date,
     List<SplitItem>? splitItems,
+    DateTime? ledgerDate,
   }) {
     return Transaction(
       id: id ?? this.id,
@@ -57,6 +62,7 @@ class Transaction extends HiveObject {
       note: note ?? this.note,
       date: date ?? this.date,
       splitItems: splitItems ?? this.splitItems,
+      ledgerDate: ledgerDate ?? this.ledgerDate,
     );
   }
 

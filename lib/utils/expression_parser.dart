@@ -5,7 +5,9 @@ class ExpressionParser {
   /// Parse an expression like "20+30+90" and evaluate it
   static double? evaluateExpression(String expression) {
     try {
-      expression = expression.replaceAll(' ', '');
+      expression = expression.replaceAll(' ', '')
+          .replaceAll('×', '*')
+          .replaceAll('÷', '/');
       if (expression.isEmpty) return null;
       
       // If it's just a number, return it
@@ -25,7 +27,9 @@ class ExpressionParser {
   /// For multiplication/division, evaluates them first, then treats result as one amount
   static List<double> extractAmounts(String expression) {
     try {
-      expression = expression.replaceAll(' ', '');
+      expression = expression.replaceAll(' ', '')
+          .replaceAll('×', '*')
+          .replaceAll('÷', '/');
       if (expression.isEmpty) return [];
       
       final amounts = <double>[];
@@ -162,17 +166,31 @@ class ExpressionParser {
     final firstPass = <String>[];
     int i = 0;
     while (i < tokens.length) {
-      if (i + 2 < tokens.length && (tokens[i + 1] == '*' || tokens[i + 1] == '/')) {
-        // Found pattern: number operator number
-        final left = double.parse(tokens[i]);
-        final operator = tokens[i + 1];
-        final right = double.parse(tokens[i + 2]);
+      final token = tokens[i];
+      
+      if (token == '*' || token == '/') {
+        // We need a left operand. It should be the last element of firstPass.
+        if (firstPass.isEmpty) {
+          // Should not happen if expression is valid, but handle gracefully
+          i++;
+          continue;
+        }
         
-        final result = operator == '*' ? left * right : left / right;
-        firstPass.add(result.toString());
-        i += 3; // Skip all three tokens
+        final left = double.parse(firstPass.removeLast());
+        
+        // Get right operand
+        if (i + 1 < tokens.length) {
+          final right = double.parse(tokens[i + 1]);
+          final result = token == '*' ? left * right : left / right;
+          firstPass.add(result.toString());
+          i += 2; // Skip operator and right operand
+        } else {
+          // Operator at end?
+          firstPass.add(left.toString());
+          i++;
+        }
       } else {
-        firstPass.add(tokens[i]);
+        firstPass.add(token);
         i++;
       }
     }

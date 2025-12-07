@@ -22,6 +22,27 @@ class ColorUtils {
   static const Color negativeLightColorDark = Color(0xFFB71C1C);
   static const Color neutralLightColorDark = Color(0xFF424242);
 
+  /// Get friend accent color based on balance and theme
+  static Color getFriendAccentColor(BuildContext context, double balance) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    if (!isDark) {
+      if (balance > 0) return positiveColor;
+      if (balance < 0) return negativeColor;
+      return theme.colorScheme.onSurface.withOpacity(0.6);
+    }
+
+    // Dark mode
+    if (balance > 0) {
+      return const Color(0xFF7AD9A3); // they owe me
+    } else if (balance < 0) {
+      return const Color(0xFFFF8FA3); // I owe
+    } else {
+      return theme.colorScheme.onSurface.withOpacity(0.6);
+    }
+  }
+
   /// Get color based on balance amount with theme context
   static Color getBalanceColor(double balance, {bool isDark = false}) {
     if (balance > 0) {

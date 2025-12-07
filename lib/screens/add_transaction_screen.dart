@@ -27,10 +27,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
+  final _itemsController = TextEditingController(); // New controller for split items
   final _friendNameController = TextEditingController();
   final FocusNode _amountFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _amountFieldKey = GlobalKey();
+  final GlobalKey _operatorRowKey = GlobalKey();
   
   TransactionType? _selectedType;
   DateTime _selectedDate = DateTime.now();
@@ -44,6 +46,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   double? _calculatedAmount;
   String? _expressionError;
   bool _showOperatorButtons = false;
+  bool _isSelfTransaction = false;
 
   @override
   void initState() {
@@ -59,38 +62,57 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       
       // Auto-scroll when keyboard appears
       if (_amountFocusNode.hasFocus) {
-        Future.delayed(const Duration(milliseconds: 300), () {
-          _scrollToAmountField();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_operatorRowKey.currentContext != null && _scrollController.hasClients) {
+            final RenderBox renderBox = _operatorRowKey.currentContext!.findRenderObject() as RenderBox;
+            final position = renderBox.localToGlobal(Offset.zero);
+            final size = renderBox.size;
+            final screenHeight = MediaQuery.of(context).size.height;
+            final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+            final visibleHeight = screenHeight - keyboardHeight;
+            
+            final bottomOfRow = position.dy + size.height;
+            
+            // Check if bottom of row is visible (with small buffer)
+            if (bottomOfRow > visibleHeight - 10) {
+              // Not fully visible, scroll just enough
+              _scrollController.animateTo(
+                _scrollController.offset + 120,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+              );
+            }
+          }
         });
       }
     });
   }
   
-  void _scrollToAmountField() {
-    if (_amountFieldKey.currentContext != null) {
-      final RenderBox? renderBox = 
-          _amountFieldKey.currentContext!.findRenderObject() as RenderBox?;
+  // void _scrollToAmountField() {
+  //   if (_amountFieldKey.currentContext != null) {
+  //     final RenderBox? renderBox = 
+  //         _amountFieldKey.currentContext!.findRenderObject() as RenderBox?;
       
-      if (renderBox != null) {
-        final position = renderBox.localToGlobal(Offset.zero);
-        final screenHeight = MediaQuery.of(context).size.height;
-        final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+  //     if (renderBox != null) {
+  //       final position = renderBox.localToGlobal(Offset.zero);
+  //       final screenHeight = MediaQuery.of(context).size.height;
+  //       final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
         
-        // Calculate scroll offset to show amount field and operator buttons
-        // Add extra space for operator buttons (approximately 60px)
-        final targetScroll = _scrollController.offset + 
-            position.dy - 
-            (screenHeight - keyboardHeight) / 2 +
-            60;
+  //       // Calculate scroll offset to show amount field and operator buttons
+  //       // Add extra space for operator buttons (approximately 60px)
+  //       final targetScroll = _scrollController.offset + 
+  //           position.dy - 
+  //           (screenHeight - keyboardHeight) / 2 +
+  //           60;
         
-        _scrollController.animateTo(
-          targetScroll.clamp(0.0, _scrollController.position.maxScrollExtent),
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    }
-  }
+  //       _scrollController.animateTo(
+  //         targetScroll.clamp(0.0, _scrollController.position.maxScrollExtent),
+  //         duration: const Duration(milliseconds: 300),
+  //         curve: Curves.easeOut,
+  //       );
+  //     }
+  //   }
+  // }
 
   void _loadFriends() {
     _allFriends = HiveService.getAllFriends();
@@ -98,9 +120,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   void _initializeForm() {
     if (widget.friend != null) {
-      _selectedFriend = widget.friend;
-      _friendNameController.text = widget.friend!.name;
-      _selectedFriendName = widget.friend!.name;
+      if (widget.friend!.id == 'self') {
+        _isSelfTransaction = true;
+      } else {
+        _selectedFriend = widget.friend;
+        _friendNameController.text = widget.friend!.name;
+        _selectedFriendName = widget.friend!.name;
+      }
     }
 
     if (widget.transaction != null) {
@@ -117,6 +143,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         
         // Note contains the descriptions
         _noteController.text = transaction.note;
+        
+        // Populate items controller from split items descriptions
+        _itemsController.text = _splitItems.map((item) => item.description).join(' ');
       } else {
         _amountController.text = transaction.amount.toString();
         _noteController.text = transaction.note;
@@ -132,6 +161,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   void dispose() {
     _amountController.dispose();
     _noteController.dispose();
+    _itemsController.dispose();
     _friendNameController.dispose();
     _amountFocusNode.dispose();
     _scrollController.dispose();
@@ -141,7 +171,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   bool get _isFormValid {
     return (_calculatedAmount != null && _calculatedAmount! > 0) &&
            _selectedType != null &&
-           (_selectedFriend != null || _friendNameController.text.isNotEmpty);
+           (_isSelfTransaction || _selectedFriend != null || _friendNameController.text.isNotEmpty);
   }
   
   void _updateCalculatedAmount() {
@@ -194,11 +224,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   Future<void> _selectDate() async {
+    final now = DateTime.now();
+    final oneYearAgo = DateTime(now.year - 1, now.month, now.day);
+    
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
+      firstDate: oneYearAgo,
+      lastDate: now,
     );
     
     if (picked != null && picked != _selectedDate) {
@@ -220,13 +253,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     try {
       final amount = _calculatedAmount!;
       final note = _noteController.text.trim();
+      final itemsText = _itemsController.text.trim();
       final expression = _amountController.text.trim();
       
       // Parse split items with descriptions ONLY when saving
       List<SplitItem>? finalSplitItems;
-      if (_isSplitTransaction && note.isNotEmpty) {
-        // Parse descriptions from note field
-        finalSplitItems = ExpressionParser.parseWithDescriptions(expression, note);
+      if (_isSplitTransaction && itemsText.isNotEmpty) {
+        // Parse descriptions from items field
+        finalSplitItems = ExpressionParser.parseWithDescriptions(expression, itemsText);
       } else if (_isSplitTransaction) {
         // No descriptions provided, use "Item N"
         finalSplitItems = _splitItems;
@@ -235,11 +269,32 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       // Handle friend selection or creation
       Friend targetFriend;
       
-      if (_selectedFriend != null && !_isNewFriend) {
+      if (_isSelfTransaction) {
+        // Use or create 'self' friend
+        final existingSelf = _allFriends.firstWhere(
+          (f) => f.id == 'self',
+          orElse: () => Friend(id: '', name: ''),
+        );
+        
+        if (existingSelf.id.isNotEmpty) {
+          targetFriend = existingSelf;
+        } else {
+          targetFriend = Friend(
+            id: 'self',
+            name: 'Self',
+          );
+          await HiveService.saveFriend(targetFriend);
+        }
+      } else if (_selectedFriend != null && !_isNewFriend) {
         targetFriend = _selectedFriend!;
       } else {
         // Use the selected friend name or text field value
-        final friendName = _selectedFriendName?.trim() ?? _friendNameController.text.trim();
+        String friendName = _selectedFriendName?.trim() ?? _friendNameController.text.trim();
+        
+        // Capitalize Friend Name (Fix 5)
+        if (friendName.isNotEmpty) {
+          friendName = friendName[0].toUpperCase() + friendName.substring(1).toLowerCase();
+        }
         
         // Case-insensitive check for existing friend
         final existingFriend = _allFriends.firstWhere(
@@ -260,6 +315,34 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           await HiveService.saveFriend(targetFriend);
         }
       }
+
+      // Check for 12-month history limit
+      // DISABLED to prevent truncation bug
+      /*
+      if (widget.transaction == null && HiveService.shouldCleanupHistory(_selectedDate)) {
+        final shouldDelete = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Older months detected'),
+            content: const Text('Do you want to delete data older than 12 months?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Delete'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Keep For Now'),
+              ),
+            ],
+          ),
+        );
+        
+        if (shouldDelete == true) {
+          await HiveService.cleanupOldHistory();
+        }
+      }
+      */
 
       // Create or update transaction
       final transaction = Transaction(
@@ -373,57 +456,91 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           controller: _scrollController,
           padding: const EdgeInsets.all(16),
           children: [
-            // Friend selection
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Friend',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+            // Transaction Mode Toggle
+            if (widget.transaction == null) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Center(
+                  child: SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment<bool>(
+                        value: false,
+                        label: Text('Friend'),
+                        icon: Icon(Icons.person),
                       ),
-                    ),
-                    
-                    const SizedBox(height: 12),
-                    
-                    // Simple friend name input with autocomplete
-                    if (_selectedFriend == null || widget.friend != null)
-                      FriendAutocomplete(
-                        controller: _friendNameController,
-                        existingFriends: _allFriends.map((f) => f.name).toList(),
-                        onFriendSelected: (name) {
-                          // Check if this friend exists (case-insensitive)
-                          final existingFriend = _allFriends.firstWhere(
-                            (f) => f.name.toLowerCase() == name.toLowerCase().trim(),
-                            orElse: () => Friend(id: '', name: ''),
-                          );
-                          
-                          setState(() {
-                            _selectedFriendName = name; // Store the display name
-                            if (existingFriend.id.isNotEmpty) {
-                              _selectedFriend = existingFriend;
-                              _isNewFriend = false;
-                            } else {
-                              _selectedFriend = null;
-                              _isNewFriend = true;
-                            }
-                          });
-                        },
-                        enabled: widget.friend == null,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Please enter friend name';
-                          }
-                          return null;
-                        },
+                      ButtonSegment<bool>(
+                        value: true,
+                        label: Text('Self'),
+                        icon: Icon(Icons.person_outline),
                       ),
-                  ],
+                    ],
+                    selected: {_isSelfTransaction},
+                    onSelectionChanged: (Set<bool> newSelection) {
+                      setState(() {
+                        _isSelfTransaction = newSelection.first;
+                        // Reset friend selection if switching to self
+                        if (_isSelfTransaction) {
+                          _selectedFriend = null;
+                          _friendNameController.clear();
+                        }
+                      });
+                    },
+                  ),
                 ),
               ),
-            ),
+            ],
+
+            // Friend selection (only if not self transaction)
+            if (!_isSelfTransaction)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Friend',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      // Simple friend name input with autocomplete
+                      FriendAutocomplete(
+                          controller: _friendNameController,
+                          existingFriends: _allFriends.where((f) => f.id != 'self').map((f) => f.name).toList(),
+                          onFriendSelected: (name) {
+                            // Check if this friend exists (case-insensitive)
+                            final existingFriend = _allFriends.firstWhere(
+                              (f) => f.name.toLowerCase() == name.toLowerCase().trim(),
+                              orElse: () => Friend(id: '', name: ''),
+                            );
+                            
+                            setState(() {
+                              _selectedFriendName = name; // Store the display name
+                              if (existingFriend.id.isNotEmpty) {
+                                _selectedFriend = existingFriend;
+                                _isNewFriend = false;
+                              } else {
+                                _selectedFriend = null;
+                                _isNewFriend = true;
+                              }
+                            });
+                          },
+                          enabled: widget.friend == null,
+                          validator: (value) {
+                            if (!_isSelfTransaction && (value == null || value.trim().isEmpty)) {
+                              return 'Please enter friend name';
+                            }
+                            return null;
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+              ),
             
             const SizedBox(height: 16),
             
@@ -457,8 +574,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       children: [
                         Expanded(
                           child: RadioListTile<TransactionType>(
-                            title: const Text('Lent'),
-                            subtitle: const Text('I gave money'),
+                            title: Text(_isSelfTransaction ? 'Spent' : 'Lend'),
+                            subtitle: Text(_isSelfTransaction ? 'Money Out' : 'I gave money'),
                             value: TransactionType.lent,
                             groupValue: _selectedType,
                             onChanged: (value) {
@@ -471,8 +588,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         
                         Expanded(
                           child: RadioListTile<TransactionType>(
-                            title: const Text('Borrowed'),
-                            subtitle: const Text('I received money'),
+                            title: Text(_isSelfTransaction ? 'Gained' : 'Borrow'),
+                            subtitle: Text(_isSelfTransaction ? 'Money In' : 'I received money'),
                             value: TransactionType.borrowed,
                             groupValue: _selectedType,
                             onChanged: (value) {
@@ -505,9 +622,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                                   padding: const EdgeInsets.all(12.0),
                                   child: Text(
                                     '= ₹${_calculatedAmount!.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      color: Theme.of(context).primaryColor,
-                                      fontWeight: FontWeight.bold,
+                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 )
@@ -522,6 +639,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     if (_showOperatorButtons) ...[
                       const SizedBox(height: 8),
                       Row(
+                        key: _operatorRowKey,
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _buildOperatorButton('+'),
@@ -535,18 +653,29 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     
                     const SizedBox(height: 16),
                     
-                    // Note (for split items or regular note)
+                    // Split Items Input
+                    if (_isSplitTransaction) ...[
+                      TextFormField(
+                        controller: _itemsController,
+                        decoration: const InputDecoration(
+                          labelText: 'Item Names',
+                          border: OutlineInputBorder(),
+                          hintText: 'e.g., corn coke cake (space or comma separated)',
+                          helperText: 'Enter item names. Names will be mapped to amounts when you save.',
+                        ),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Note (Regular note)
                     TextFormField(
                       controller: _noteController,
-                      decoration: InputDecoration(
-                        labelText: _isSplitTransaction ? 'Note / Item Names' : 'Note (optional)',
-                        border: const OutlineInputBorder(),
-                        hintText: _isSplitTransaction 
-                            ? 'e.g., corn coke cake (space or comma separated)'
-                            : 'Add a note about this transaction',
-                        helperText: _isSplitTransaction 
-                            ? 'Enter item names. Names will be mapped to amounts when you save.'
-                            : 'Max 5 words for single transactions',
+                      decoration: const InputDecoration(
+                        labelText: 'Note (optional)',
+                        border: OutlineInputBorder(),
+                        hintText: 'Add a note about this transaction',
+                        helperText: 'Max 5 words for single transactions',
                       ),
                       maxLines: 3,
                       validator: (value) {
@@ -559,7 +688,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         }
                         return null;
                       },
-                      // Don't update split items while typing - only on save
                     ),
                     
                     if (_splitItems.isNotEmpty) ...[

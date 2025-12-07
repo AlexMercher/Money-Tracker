@@ -3,6 +3,9 @@ import '../services/auth_service.dart';
 import '../services/hive_service.dart';
 import '../utils/page_transitions.dart';
 import 'pdf_manager_screen.dart';
+import 'month_history_screen.dart';
+import 'package:flutter/foundation.dart';
+
 
 /// Screen for app settings and preferences
 class SettingsScreen extends StatefulWidget {
@@ -160,20 +163,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _showClearDataDialog() async {
-    // Require authentication if it's enabled
-    if (_authEnabled) {
-      final authenticated = await AuthService.authenticate();
-      if (!authenticated) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Authentication required to clear data.'),
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-        return;
+    // Require authentication
+    final authenticated = await AuthService.authenticate();
+    if (!authenticated) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Authentication required to clear data.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
       }
+      return;
     }
     
     final confirmed = await showDialog<bool>(
@@ -255,6 +256,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 
                 const SizedBox(height: 16),
+
+                // History Section
+                _buildSectionHeader('History'),
+                Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: ListTile(
+                    leading: const Icon(Icons.history),
+                    title: const Text('Month History'),
+                    subtitle: const Text('View past budget history'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () async {
+                      final auth = await AuthService.authenticate(
+                        localizedReason: 'Authenticate to view Month History',
+                      );
+                      if (auth && mounted) {
+                        Navigator.push(
+                          context,
+                          PageTransitions.fadeSlide(const MonthHistoryScreen()),
+                        );
+                      }
+                    },
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
                 
                 // Data Section
                 _buildSectionHeader('Data Management'),
@@ -309,6 +335,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       
                       const Divider(height: 1),
                       
+
+
                       ListTile(
                         leading: Icon(
                           Icons.delete_forever,
@@ -338,8 +366,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Text(
         title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: Theme.of(context).primaryColor,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurface,
           fontWeight: FontWeight.w600,
         ),
       ),

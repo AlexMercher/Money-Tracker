@@ -52,6 +52,7 @@ dependencies:
   
   # State Management
   provider: ^6.1.2
+  fl_chart: ^1.1.1
 
 dev_dependencies:
   flutter_test:
@@ -64,6 +65,8 @@ dev_dependencies:
   
   # App Icon Generator
   flutter_launcher_icons: ^0.13.1
+  hive_test: ^1.0.1
+  mockito: ^5.4.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

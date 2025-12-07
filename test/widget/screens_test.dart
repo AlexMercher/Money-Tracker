@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moneytrack/screens/home_screen.dart';
 import 'package:moneytrack/services/hive_service.dart';
@@ -12,7 +13,16 @@ void main() {
     setUpAll(() async {
       // Setup test environment
       tempDir = await Directory.systemTemp.createTemp('widget_test');
-      await Hive.initFlutter(tempDir.path);
+      
+      // Mock path_provider
+      const MethodChannel channel = MethodChannel('plugins.flutter.io/path_provider');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        (MethodCall methodCall) async {
+          return tempDir.path;
+        },
+      );
+
       await HiveService.init();
     });
 
@@ -37,6 +47,7 @@ void main() {
           home: const HomeScreen(),
         ),
       );
+      await tester.pumpAndSettle();
 
       // Should show empty state
       expect(find.text('No friends added yet'), findsOneWidget);
@@ -53,10 +64,11 @@ void main() {
           home: const HomeScreen(),
         ),
       );
+      await tester.pumpAndSettle();
 
       // Check app bar
       expect(find.text('MoneyTrack'), findsOneWidget);
-      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
     });
 
     testWidgets('HomeScreen should show floating action button', (WidgetTester tester) async {
@@ -65,25 +77,11 @@ void main() {
           home: const HomeScreen(),
         ),
       );
+      await tester.pumpAndSettle();
 
       // Check floating action button
       expect(find.byType(FloatingActionButton), findsOneWidget);
       expect(find.byIcon(Icons.add), findsWidgets);
-    });
-
-    testWidgets('HomeScreen refresh button should work', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: const HomeScreen(),
-        ),
-      );
-
-      // Tap refresh button
-      await tester.tap(find.byIcon(Icons.refresh));
-      await tester.pump();
-
-      // Should still show empty state after refresh
-      expect(find.text('No friends added yet'), findsOneWidget);
     });
 
     testWidgets('HomeScreen should handle loading state', (WidgetTester tester) async {

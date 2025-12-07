@@ -10,6 +10,7 @@ class TransactionGroupTile extends StatefulWidget {
   final VoidCallback? onDelete;
   final bool showActions;
   final Function(Transaction)? onTransactionTap;
+  final bool isSelf;
 
   const TransactionGroupTile({
     super.key,
@@ -17,6 +18,7 @@ class TransactionGroupTile extends StatefulWidget {
     this.onDelete,
     this.showActions = true,
     this.onTransactionTap,
+    this.isSelf = false,
   });
 
   @override
@@ -60,11 +62,23 @@ class _TransactionGroupTileState extends State<TransactionGroupTile>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isPositive = widget.group.type == TransactionType.lent;
-    final color = isPositive ? ColorUtils.positiveColor : ColorUtils.negativeColor;
-    final lightColor = isPositive ? ColorUtils.positiveLightColor : ColorUtils.negativeLightColor;
-    final sign = isPositive ? '+' : '-';
-    final typeText = isPositive ? 'Lent' : 'Borrowed';
+    
+    // For Self: Lent = Spent (Negative/Red), Borrowed = Gained (Positive/Green)
+    final isGreen = widget.isSelf ? !isPositive : isPositive;
+    
+    final color = isGreen 
+        ? (isDark ? ColorUtils.positiveColorDark : ColorUtils.positiveColor)
+        : (isDark ? ColorUtils.negativeColorDark : ColorUtils.negativeColor);
+    final lightColor = isGreen 
+        ? (isDark ? ColorUtils.positiveLightColorDark : ColorUtils.positiveLightColor)
+        : (isDark ? ColorUtils.negativeLightColorDark : ColorUtils.negativeLightColor);
+    
+    final sign = isGreen ? '+' : '-';
+    final typeText = widget.isSelf 
+        ? (isPositive ? 'Spent' : 'Gained')
+        : (isPositive ? 'Lent' : 'Borrowed');
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -96,7 +110,7 @@ class _TransactionGroupTileState extends State<TransactionGroupTile>
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: lightColor,
+                  color: isDark ? color.withOpacity(0.2) : lightColor,
                   shape: BoxShape.circle,
                 ),
                 child: widget.group.isGrouped
@@ -407,14 +421,14 @@ class _TransactionGroupTileState extends State<TransactionGroupTile>
               'Total: ',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
             ),
             Text(
               '₹${transaction.amount.toStringAsFixed(2)}',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
             ),
           ],

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../models/friend.dart';
 import '../models/transaction.dart';
@@ -438,6 +439,9 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
     );
 
     if (result == true) {
+      // Haptic feedback for destructive action - must await to ensure execution
+      await HapticFeedback.mediumImpact();
+      
       setState(() {
         _isLoading = true;
       });
@@ -597,6 +601,9 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
               fontWeight: FontWeight.bold,
               color: isDark ? Colors.white : Colors.black,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
           ),
           
           const SizedBox(height: 8),
@@ -607,11 +614,15 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
             children: [
               Icon(balanceIcon, color: balanceColor, size: 20),
               const SizedBox(width: 8),
-              Text(
-                balanceText,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: balanceColor,
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Text(
+                  balanceText,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: balanceColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -691,6 +702,8 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -699,6 +712,8 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
                           color: isDark ? ColorUtils.negativeColorDark : ColorUtils.negativeColor,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -716,6 +731,8 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -724,6 +741,8 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
                           color: isDark ? ColorUtils.positiveColorDark : ColorUtils.positiveColor,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -743,6 +762,8 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -751,6 +772,8 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
                           color: Colors.orange,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -768,6 +791,8 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -776,6 +801,8 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
                           color: Colors.purple,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -790,18 +817,19 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
 
   Widget _buildTransactionsList() {
     if (_friend.transactions.isEmpty) {
-      return const Center(
+      final secondaryColor = Theme.of(context).colorScheme.onSurfaceVariant;
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32.0),
+          padding: const EdgeInsets.all(32.0),
           child: Column(
             children: [
-              Icon(Icons.receipt_long, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
+              Icon(Icons.receipt_long, size: 64, color: secondaryColor),
+              const SizedBox(height: 16),
               Text(
                 'No transactions yet',
                 style: TextStyle(
                   fontSize: 18,
-                  color: Colors.grey,
+                  color: secondaryColor,
                 ),
               ),
             ],
@@ -826,18 +854,19 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
 
     // If no results after filtering
     if (sortedTransactions.isEmpty) {
+      final secondaryColor = Theme.of(context).colorScheme.onSurfaceVariant;
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
           child: Column(
             children: [
-              const Icon(Icons.search_off, size: 64, color: Colors.grey),
+              Icon(Icons.search_off, size: 64, color: secondaryColor),
               const SizedBox(height: 16),
               Text(
                 'No transactions found',
                 style: TextStyle(
                   fontSize: 18,
-                  color: Colors.grey.shade600,
+                  color: secondaryColor,
                 ),
               ),
               const SizedBox(height: 8),
@@ -845,7 +874,7 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
                 'Try a different search term',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade500,
+                  color: secondaryColor,
                 ),
               ),
             ],

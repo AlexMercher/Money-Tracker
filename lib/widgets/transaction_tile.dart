@@ -128,11 +128,15 @@ class TransactionTile extends StatelessWidget {
               const SizedBox(width: 8),
               
               // Amount with sign
-              Text(
-                '$sign₹${transaction.amount.toStringAsFixed(2)}',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: Text(
+                  '$sign₹${transaction.amount.toStringAsFixed(2)}',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -146,7 +150,8 @@ class TransactionTile extends StatelessWidget {
               Row(
                 children: [
                   // Transaction type
-                  IntrinsicWidth(
+                  Flexible(
+                    flex: 0,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
@@ -157,7 +162,7 @@ class TransactionTile extends StatelessWidget {
                         typeText,
                         maxLines: 1,
                         softWrap: false,
-                        overflow: TextOverflow.fade,
+                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: color,
                           fontWeight: FontWeight.w500,
@@ -169,10 +174,14 @@ class TransactionTile extends StatelessWidget {
                   const SizedBox(width: 8),
                   
                   // Date
-                  Text(
-                    formattedDate,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  Flexible(
+                    child: Text(
+                      formattedDate,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   
@@ -205,12 +214,17 @@ class TransactionTile extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              item.description,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontSize: 11,
+                            Flexible(
+                              child: Text(
+                                item.description,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  fontSize: 11,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: 8),
                             Text(
                               '${item.isNegative ? "-" : ""}₹${item.amount.toStringAsFixed(2)}',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(

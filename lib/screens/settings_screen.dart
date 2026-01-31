@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/auth_service.dart';
 import '../services/hive_service.dart';
 import '../utils/page_transitions.dart';
 import 'pdf_manager_screen.dart';
 import 'month_history_screen.dart';
+import 'manage_categories_screen.dart';
 import 'package:flutter/foundation.dart';
 
 
@@ -201,6 +203,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirmed == true) {
+      // Haptic feedback for destructive action - must await to ensure execution
+      await HapticFeedback.mediumImpact();
+      
       await HiveService.clearAllData();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -288,6 +293,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Column(
                     children: [
+                      ListTile(
+                        leading: const Icon(Icons.category_outlined),
+                        title: const Text('Category Management'),
+                        subtitle: const Text('Rename or merge expense categories'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () async {
+                          final auth = await AuthService.authenticate(
+                            localizedReason: 'Authenticate to manage categories',
+                          );
+                          if (auth && mounted) {
+                            Navigator.push(
+                              context,
+                              PageTransitions.fadeSlide(const ManageCategoriesScreen()),
+                            );
+                          }
+                        },
+                      ),
+                      
+                      const Divider(height: 1),
+                      
                       ListTile(
                         leading: const Icon(Icons.picture_as_pdf),
                         title: const Text('PDF Reports'),

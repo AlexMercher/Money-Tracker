@@ -67,11 +67,11 @@ class _CashBorrowingLedgerScreenState extends State<CashBorrowingLedgerScreen> {
             ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
           if (entries.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
                 'No cash records yet.\nUse the buttons below to add one.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             );
           }
@@ -94,6 +94,8 @@ class _CashBorrowingLedgerScreenState extends State<CashBorrowingLedgerScreen> {
                   title: Text(
                     friendName,
                     style: const TextStyle(fontWeight: FontWeight.bold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   children: friendEntries.map((entry) {
                     return Dismissible(
@@ -118,7 +120,7 @@ class _CashBorrowingLedgerScreenState extends State<CashBorrowingLedgerScreen> {
                               ),
                               TextButton(
                                 onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                child: Text('Delete', style: TextStyle(color: Theme.of(context).colorScheme.error)),
                               ),
                             ],
                           ),

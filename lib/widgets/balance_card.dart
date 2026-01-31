@@ -112,7 +112,7 @@ class _BalanceCardState extends State<BalanceCard> with SingleTickerProviderStat
               
               const SizedBox(width: 16),
               
-              // Friend name and transaction count
+              // Friend name and transaction count - takes remaining space
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,6 +123,8 @@ class _BalanceCardState extends State<BalanceCard> with SingleTickerProviderStat
                         fontWeight: FontWeight.w600,
                         color: isDark ? Theme.of(context).colorScheme.onSurface : Colors.black87,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     
                     const SizedBox(height: 4),
@@ -137,51 +139,66 @@ class _BalanceCardState extends State<BalanceCard> with SingleTickerProviderStat
                 ),
               ),
               
-              // Balance information
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  // Balance amount
-                  Text(
-                    formattedBalance,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: balanceColor,
-                      fontWeight: FontWeight.bold,
+              // Trailing unit: balance + chevron as a single tight group
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Balance information
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Balance amount
+                          Text(
+                            formattedBalance,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: balanceColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          
+                          const SizedBox(height: 4),
+                          
+                          // Balance description with icon
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                balanceIcon,
+                                size: 16,
+                                color: balanceColor,
+                              ),
+                              
+                              const SizedBox(width: 4),
+                              
+                              Flexible(
+                                child: Text(
+                                  balanceText,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: balanceColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  
-                  const SizedBox(height: 4),
-                  
-                  // Balance description with icon
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        balanceIcon,
-                        size: 16,
-                        color: balanceColor,
-                      ),
-                      
-                      const SizedBox(width: 4),
-                      
-                      Text(
-                        balanceText,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: balanceColor,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              
-              const SizedBox(width: 8),
-              
-              // Chevron icon
-              Icon(
-                Icons.chevron_right,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                    
+                    // Chevron icon
+                    Icon(
+                      Icons.chevron_right,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

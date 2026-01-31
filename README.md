@@ -6,6 +6,20 @@
 An offline-first Flutter money tracking app for managing who owes whom money between you and your friends.  
 Licensed under CC BY-NC 4.0 — Credit to Himanshu Ranjan.
 
+## Key Features
+
+- **Offline-First Architecture**: All data is stored and processed locally with deterministic behavior and no cloud dependency.
+- **Shadow Ledger System**: A shadow ledger records deltas to ensure accurate budgets and charts without double counting.
+- **Canonical Budget Logic**: Budgets track net money leaving the user's pocket, based on balance movement rules.
+- **Class A / Class B Category Model**: Notes (Class A) can optionally be grouped into user-defined categories (Class B) for clean aggregation.
+- **Explicit Category Management**: Users can create, rename, delete categories and move notes between them with full control.
+- **Trie-Based Note Autocomplete**: Notes are suggested using a trie with strict junk filtering and deterministic relevance ordering.
+- **Relevance-Sorted Autocomplete**: Friend and note suggestions are ranked by prefix, word-boundary, and substring relevance.
+- **Context-Aware Transaction Routing**: Transaction flows route correctly based on whether the user is in self or friend context.
+- **Responsive Charts with Safe Tooltips**: Line and pie charts adapt across devices with bounds-aware tooltips.
+- **Multi-Select Note Organization**: Multiple notes can be selected and moved into categories in a single explicit action.
+- **Dark / Light Mode Theme Safety**: All UI text uses semantic theme tokens to remain readable in both light and dark mode.
+
 ## Features
 
 ### Core Functionality

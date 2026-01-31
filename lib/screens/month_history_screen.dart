@@ -133,7 +133,7 @@ class _MonthHistoryScreenState extends State<MonthHistoryScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   'old: ${event.oldBalance.toStringAsFixed(2)} → new: ${event.newBalance.toStringAsFixed(2)}',
-                                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                 ),
                                 Text(
                                   'deltaBudget: ${event.deltaBudget.toStringAsFixed(2)}',

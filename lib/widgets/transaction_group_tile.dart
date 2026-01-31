@@ -194,32 +194,41 @@ class _TransactionGroupTileState extends State<TransactionGroupTile>
                     Row(
                       children: [
                         // Transaction type
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: lightColor,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            typeText,
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: color,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                        IntrinsicWidth(
+                          child: Container(
+                            constraints: const BoxConstraints(maxWidth: 80),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: lightColor,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              typeText,
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: color,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                         
                         const SizedBox(width: 8),
                         
                         // Date or date range
-                        Text(
-                          _getDateText(),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withOpacity(0.6),
-                              ),
+                        Flexible(
+                          child: Text(
+                            _getDateText(),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.6),
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         
                         if (widget.group.isGrouped) ...[
@@ -452,15 +461,19 @@ class _TransactionGroupTileState extends State<TransactionGroupTile>
                 ),
                 if (item.description.isNotEmpty) ...[
                   const SizedBox(width: 4),
-                  Text(
-                    '(${item.description})',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withOpacity(0.7),
-                          fontStyle: FontStyle.italic,
-                        ),
+                  Flexible(
+                    child: Text(
+                      '(${item.description})',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.7),
+                            fontStyle: FontStyle.italic,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ],
@@ -492,6 +505,7 @@ class _TransactionGroupTileState extends State<TransactionGroupTile>
       runSpacing: 4,
       children: items.map((item) {
         return Container(
+          constraints: const BoxConstraints(maxWidth: 150),
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
             color: Theme.of(context).primaryColor.withOpacity(0.1),
@@ -508,15 +522,19 @@ class _TransactionGroupTileState extends State<TransactionGroupTile>
               ),
               if (item.description.isNotEmpty) ...[
                 const SizedBox(width: 4),
-                Text(
-                  '(${item.description})',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.7),
-                        fontStyle: FontStyle.italic,
-                      ),
+                Flexible(
+                  child: Text(
+                    '(${item.description})',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.7),
+                          fontStyle: FontStyle.italic,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ],

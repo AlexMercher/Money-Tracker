@@ -386,19 +386,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    'Used: ₹${_currentMonthUsage.toStringAsFixed(0)}',
-                                    style: TextStyle(
-                                      color: _currentMonthUsage > _currentUser!.monthlyBudget 
-                                          ? Colors.red 
-                                          : Theme.of(context).textTheme.bodyMedium?.color,
-                                      fontWeight: FontWeight.bold,
+                                  Flexible(
+                                    child: Text(
+                                      'Used: ₹${_currentMonthUsage.toStringAsFixed(0)}',
+                                      style: TextStyle(
+                                        color: _currentMonthUsage > _currentUser!.monthlyBudget 
+                                            ? Colors.red 
+                                            : Theme.of(context).textTheme.bodyMedium?.color,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  Text(
-                                    'Budget: ₹${_currentUser!.monthlyBudget.toStringAsFixed(0)}',
-                                    style: TextStyle(
-                                      color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      'Budget: ₹${_currentUser!.monthlyBudget.toStringAsFixed(0)}',
+                                      style: TextStyle(
+                                        color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
@@ -408,7 +417,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   padding: const EdgeInsets.only(top: 8),
                                   child: Text(
                                     'Budget Exceeded by ₹${(_currentMonthUsage - _currentUser!.monthlyBudget).toStringAsFixed(0)}',
-                                    style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+                                    style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12, fontWeight: FontWeight.bold),
                                   ),
                                 )
                               else
@@ -495,7 +504,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                                 prefixText: '+91 ',
                                 errorText: _phoneExceedsLimit ? 'Maximum 10 digits allowed' : null,
-                                errorStyle: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                                errorStyle: TextStyle(color: Theme.of(context).colorScheme.error, fontWeight: FontWeight.bold),
                               ),
                               keyboardType: TextInputType.phone,
                               inputFormatters: [

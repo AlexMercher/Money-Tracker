@@ -31,9 +31,33 @@ class FriendAutocomplete extends StatelessWidget {
         }
         
         final searchText = textEditingValue.text.toLowerCase().trim();
-        return existingFriends.where((String friend) {
+        
+        // Filter matches
+        final matches = existingFriends.where((String friend) {
           return friend.toLowerCase().contains(searchText);
         }).toList();
+        
+        // Sort by relevance tiers:
+        // Tier 1: Prefix match (name starts with query)
+        // Tier 2: Word-boundary prefix (any word starts with query)
+        // Tier 3: Substring match (contains query anywhere)
+        // Tier 4: Alphabetical fallback within same tier
+        matches.sort((a, b) {
+          final aLower = a.toLowerCase();
+          final bLower = b.toLowerCase();
+          
+          final aTier = _getRelevanceTier(aLower, searchText);
+          final bTier = _getRelevanceTier(bLower, searchText);
+          
+          if (aTier != bTier) {
+            return aTier.compareTo(bTier);
+          }
+          
+          // Same tier: alphabetical (case-insensitive)
+          return aLower.compareTo(bLower);
+        });
+        
+        return matches;
       },
       onSelected: (String selection) {
         controller.text = selection;
@@ -131,5 +155,27 @@ class FriendAutocomplete extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// Returns relevance tier for sorting (lower = higher priority).
+  /// Tier 1: Name starts with query
+  /// Tier 2: Any word in name starts with query
+  /// Tier 3: Name contains query (substring)
+  int _getRelevanceTier(String nameLower, String queryLower) {
+    // Tier 1: Prefix match
+    if (nameLower.startsWith(queryLower)) {
+      return 1;
+    }
+    
+    // Tier 2: Word-boundary prefix (any word starts with query)
+    final words = nameLower.split(RegExp(r'\s+'));
+    for (final word in words) {
+      if (word.startsWith(queryLower)) {
+        return 2;
+      }
+    }
+    
+    // Tier 3: Substring match (already filtered, so must contain)
+    return 3;
   }
 }

@@ -5,6 +5,7 @@ import '../models/friend.dart';
 import '../models/transaction.dart';
 import '../models/split_item.dart';
 import '../services/hive_service.dart';
+import '../services/category_service.dart';
 import '../utils/expression_parser.dart';
 import '../widgets/friend_autocomplete.dart';
 
@@ -362,6 +363,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         await HiveService.addTransaction(targetFriend.id, transaction);
       }
 
+      // Learn note into Trie for future suggestions (ALL transactions, not just self)
+      // This populates the global vocabulary for autocomplete
+      if (widget.transaction == null && note.isNotEmpty) {
+        await CategoryService.learnCategory(note);
+      }
+
       if (mounted) {
         Navigator.of(context).pop(true);
       }
@@ -428,6 +435,90 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Build note field with autocomplete suggestions.
+  /// Suggestions come from the Trie populated by ALL past transaction notes.
+  Widget _buildNoteCategoryAutocomplete() {
+    return Autocomplete<String>(
+      optionsBuilder: (TextEditingValue textEditingValue) async {
+        if (textEditingValue.text.isEmpty) {
+          return const Iterable<String>.empty();
+        }
+        return await CategoryService.getSuggestions(textEditingValue.text);
+      },
+      onSelected: (String selection) {
+        _noteController.text = selection;
+      },
+      fieldViewBuilder: (
+        BuildContext context,
+        TextEditingController fieldController,
+        FocusNode fieldFocusNode,
+        VoidCallback onFieldSubmitted,
+      ) {
+        // Sync the controllers
+        if (_noteController.text.isNotEmpty && fieldController.text.isEmpty) {
+          fieldController.text = _noteController.text;
+        }
+        fieldController.addListener(() {
+          if (_noteController.text != fieldController.text) {
+            _noteController.text = fieldController.text;
+          }
+        });
+        
+        return TextFormField(
+          controller: fieldController,
+          focusNode: fieldFocusNode,
+          decoration: const InputDecoration(
+            labelText: 'Note (optional)',
+            border: OutlineInputBorder(),
+            hintText: 'e.g., Groceries, Food, Lunch',
+            helperText: 'Type to see suggestions from past transactions',
+          ),
+          maxLines: 1,
+          validator: (value) {
+            // Only validate word count for non-split transactions
+            if (!_isSplitTransaction && value != null && value.trim().isNotEmpty) {
+              final wordCount = value.trim().split(RegExp(r'\s+')).length;
+              if (wordCount > 5) {
+                return 'Note cannot exceed 5 words for single transactions';
+              }
+            }
+            return null;
+          },
+        );
+      },
+      optionsViewBuilder: (
+        BuildContext context,
+        AutocompleteOnSelected<String> onSelected,
+        Iterable<String> options,
+      ) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(8),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200, maxWidth: 300),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final option = options.elementAt(index);
+                  return ListTile(
+                    dense: true,
+                    title: Text(option),
+                    leading: const Icon(Icons.history, size: 18),
+                    onTap: () => onSelected(option),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -668,27 +759,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       const SizedBox(height: 16),
                     ],
 
-                    // Note (Regular note)
-                    TextFormField(
-                      controller: _noteController,
-                      decoration: const InputDecoration(
-                        labelText: 'Note (optional)',
-                        border: OutlineInputBorder(),
-                        hintText: 'Add a note about this transaction',
-                        helperText: 'Max 5 words for single transactions',
-                      ),
-                      maxLines: 3,
-                      validator: (value) {
-                        // Only validate word count for non-split transactions
-                        if (!_isSplitTransaction && value != null && value.trim().isNotEmpty) {
-                          final wordCount = value.trim().split(RegExp(r'\s+')).length;
-                          if (wordCount > 5) {
-                            return 'Note cannot exceed 5 words for single transactions';
-                          }
-                        }
-                        return null;
-                      },
-                    ),
+                    // Note (Regular note) - with autocomplete suggestions for all transactions
+                    _buildNoteCategoryAutocomplete(),
                     
                     if (_splitItems.isNotEmpty) ...[
                       const SizedBox(height: 16),
@@ -729,10 +801,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    item.description,
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                  Flexible(
+                                    child: Text(
+                                      item.description,
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
+                                  const SizedBox(width: 8),
                                   Text(
                                     '${item.isNegative ? "-" : ""}₹${item.amount.toStringAsFixed(2)}',
                                     style: Theme.of(context).textTheme.bodySmall?.copyWith(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/transaction.dart';
 import '../services/hive_service.dart';
+import '../services/category_service.dart';
 import '../models/shadow_event.dart';
 
 class SelfExpenseCharts extends StatefulWidget {
@@ -15,6 +16,25 @@ class SelfExpenseCharts extends StatefulWidget {
 }
 
 class _SelfExpenseChartsState extends State<SelfExpenseCharts> {
+  Map<String, String?> _noteToCategory = {};
+  bool _categoriesLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    final mapping = await CategoryService.getNoteToDisplayLabelMap();
+    if (mounted) {
+      setState(() {
+        _noteToCategory = mapping;
+        _categoriesLoaded = true;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.transactions.isEmpty) {
@@ -31,23 +51,37 @@ class _SelfExpenseChartsState extends State<SelfExpenseCharts> {
   }
 
   Widget _buildPieChartCard(List<Transaction> transactions) {
-    final Map<String, double> categoryTotals = {};
+    // Aggregate by display label (Class B category or independent Class A note)
+    final Map<String, double> displayTotals = {};
+    final Map<String, List<Transaction>> transactionsByLabel = {};
+    
     for (var t in transactions) {
       // Exclude Gains (Borrowed type for Self means Money In)
       if (t.type == TransactionType.borrowed) continue;
 
-      // Label cleaning
-      var category = t.note.trim();
-      // Remove (my share) or (myshare) case-insensitive
-      category = category.replaceAll(RegExp(r'\s*\(my\s*share\)', caseSensitive: false), '');
-      category = category.replaceAll(RegExp(r'\s*\(myshare\)', caseSensitive: false), '');
-      category = category.trim();
-
-      final key = category.isEmpty ? 'others' : category.toLowerCase();
-      categoryTotals[key] = (categoryTotals[key] ?? 0) + t.amount;
+      // Clean the note
+      var note = t.note.trim();
+      note = note.replaceAll(RegExp(r'\s*\(my\s*share\)', caseSensitive: false), '');
+      note = note.replaceAll(RegExp(r'\s*\(myshare\)', caseSensitive: false), '');
+      note = note.trim();
+      
+      final normalizedNote = note.toLowerCase();
+      
+      // Determine display label:
+      // - If note is assigned to a Class B category, use category name
+      // - Otherwise, use the note itself (independent Class A)
+      String displayLabel;
+      if (_noteToCategory.containsKey(normalizedNote) && _noteToCategory[normalizedNote] != null) {
+        displayLabel = _noteToCategory[normalizedNote]!.toLowerCase();
+      } else {
+        displayLabel = normalizedNote.isEmpty ? 'others' : normalizedNote;
+      }
+      
+      displayTotals[displayLabel] = (displayTotals[displayLabel] ?? 0) + t.amount;
+      transactionsByLabel.putIfAbsent(displayLabel, () => []).add(t);
     }
 
-    final sortedEntries = categoryTotals.entries.toList()
+    final sortedEntries = displayTotals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Card(
@@ -70,6 +104,18 @@ class _SelfExpenseChartsState extends State<SelfExpenseCharts> {
                 PieChartData(
                   sectionsSpace: 2,
                   centerSpaceRadius: 40,
+                  pieTouchData: PieTouchData(
+                    touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                      if (event is FlTapUpEvent && pieTouchResponse?.touchedSection != null) {
+                        final index = pieTouchResponse!.touchedSection!.touchedSectionIndex;
+                        if (index >= 0 && index < sortedEntries.length) {
+                          final label = sortedEntries[index].key;
+                          final txns = transactionsByLabel[label] ?? [];
+                          _showCategoryTransactions(context, label, txns);
+                        }
+                      }
+                    },
+                  ),
                   sections: sortedEntries.asMap().entries.map((entry) {
                     final data = entry.value;
                     final color = _getColorForCategory(data.key);
@@ -95,25 +141,114 @@ class _SelfExpenseChartsState extends State<SelfExpenseCharts> {
               children: sortedEntries.asMap().entries.map((entry) {
                 final data = entry.value;
                 final color = _getColorForCategory(data.key);
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.8),
-                        shape: BoxShape.circle,
-                      ),
+                return GestureDetector(
+                  onTap: () {
+                    final txns = transactionsByLabel[data.key] ?? [];
+                    _showCategoryTransactions(context, data.key, txns);
+                  },
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 150),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.8),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            '${toBeginningOfSentenceCase(data.key)} – ₹${data.value.toStringAsFixed(0)}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${toBeginningOfSentenceCase(data.key)} – ₹${data.value.toStringAsFixed(0)}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
+                  ),
                 );
               }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCategoryTransactions(BuildContext context, String label, List<Transaction> transactions) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.8,
+        expand: false,
+        builder: (context, scrollController) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    toBeginningOfSentenceCase(label) ?? label,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '${transactions.length} expense(s) – ₹${transactions.fold<double>(0, (sum, t) => sum + t.amount).toStringAsFixed(0)}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: transactions.length,
+                itemBuilder: (context, index) {
+                  final t = transactions[index];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                      child: Icon(
+                        Icons.receipt_outlined,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        size: 20,
+                      ),
+                    ),
+                    title: Text(t.note.isEmpty ? 'No note' : t.note),
+                    subtitle: Text(DateFormat('MMM d, yyyy').format(t.date)),
+                    trailing: Text(
+                      '₹${t.amount.toStringAsFixed(0)}',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -142,8 +277,15 @@ class _SelfExpenseChartsState extends State<SelfExpenseCharts> {
 
   Widget _buildLineChartCard(List<Transaction> transactions) {
     // Use Shadow Ledger for Line Chart
-    final now = DateTime.now();
-    final shadowEvents = HiveService.getShadowEventsForMonth(now);
+    // Derive the target month from the transactions, not DateTime.now()
+    // This ensures past months show their own stored graph data
+    final DateTime targetMonth;
+    if (transactions.isNotEmpty) {
+      targetMonth = transactions.first.date;
+    } else {
+      targetMonth = DateTime.now();
+    }
+    final shadowEvents = HiveService.getShadowEventsForMonth(targetMonth);
 
     // Group by week
     // Week 1: Days 1-7, Week 2: 8-14, etc.
@@ -270,6 +412,8 @@ class _SelfExpenseChartsState extends State<SelfExpenseCharts> {
                   ],
                   lineTouchData: LineTouchData(
                     touchTooltipData: LineTouchTooltipData(
+                      fitInsideHorizontally: true,
+                      fitInsideVertically: true,
                       getTooltipColor: (touchedSpot) => Theme.of(context).cardColor,
                       tooltipPadding: const EdgeInsets.all(8),
                       tooltipBorder: BorderSide(

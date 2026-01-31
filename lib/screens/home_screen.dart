@@ -185,12 +185,27 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _navigateToAddTransaction() {
-    Navigator.of(context).push(
-      PageTransitions.fadeSlide(const AddTransactionScreen()),
-    ).then((_) => _loadFriends()); // Refresh when returning
+    // Context-aware navigation: route based on current view mode
+    if (_showSelfTransactions) {
+      // Self Expenditure context → Self transaction flow
+      final selfFriend = friends.firstWhere(
+        (f) => f.id == 'self',
+        orElse: () => Friend(id: 'self', name: 'Self'),
+      );
+      Navigator.of(context).push(
+        PageTransitions.fadeSlide(AddTransactionScreen(friend: selfFriend)),
+      ).then((_) => _loadFriends());
+    } else {
+      // Friends context → Friend transaction flow (no friend pre-selected)
+      Navigator.of(context).push(
+        PageTransitions.fadeSlide(const AddTransactionScreen()),
+      ).then((_) => _loadFriends());
+    }
   }
   
   void _navigateToSplitTransaction() {
+    // Split transaction is only for friends (splitting bill among multiple friends)
+    // From Self Expenditure, this should not be called (menu is hidden)
     Navigator.of(context).push(
       PageTransitions.fadeSlide(const SplitTransactionScreen()),
     ).then((_) => _loadFriends()); // Refresh when returning
@@ -222,7 +237,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: Theme.of(context).colorScheme.outlineVariant,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -234,37 +249,42 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
-                    Icons.person,
+                    _showSelfTransactions ? Icons.receipt_long : Icons.person,
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
-                title: const Text('Single Transaction'),
-                subtitle: const Text('Add transaction with one friend'),
+                title: Text(_showSelfTransactions ? 'Add Expense' : 'Single Transaction'),
+                subtitle: Text(_showSelfTransactions 
+                    ? 'Record a personal expense'
+                    : 'Add transaction with one friend'),
                 onTap: () {
                   Navigator.of(context).pop();
                   _navigateToAddTransaction();
                 },
               ),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+              // Split Transaction option - only show for Friends context
+              if (!_showSelfTransactions) ...[
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.people,
+                      color: Colors.orange,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.people,
-                    color: Colors.orange,
-                  ),
+                  title: const Text('Split Transaction'),
+                  subtitle: const Text('Split bill among multiple friends'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _navigateToSplitTransaction();
+                  },
                 ),
-                title: const Text('Split Transaction'),
-                subtitle: const Text('Split bill among multiple friends'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _navigateToSplitTransaction();
-                },
-              ),
+              ],
               const SizedBox(height: 16),
             ],
           ),
@@ -662,14 +682,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, color: color, size: 16),
               const SizedBox(width: 4),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w500,
+              Flexible(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -683,6 +708,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               color: color,
               fontWeight: FontWeight.bold,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -786,47 +813,59 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Budget Left',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Budget Left',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '₹${budgetLeft.toStringAsFixed(0)}',
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                color: budgetLeft < 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface,
-                                fontWeight: FontWeight.bold,
+                              const SizedBox(height: 4),
+                              Text(
+                                '₹${budgetLeft.toStringAsFixed(0)}',
+                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: budgetLeft < 0 ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurface,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         Container(
                           height: 40,
                           width: 1,
                           color: Theme.of(context).dividerColor,
                         ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              'Days Left',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).hintColor,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'Days Left',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).hintColor,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${daysRemaining}',
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
+                              const SizedBox(height: 4),
+                              Text(
+                                '${daysRemaining}',
+                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -1016,7 +1055,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                'MoneyTrack v1.0.0',
+                'MoneyTrack v1.1.0',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                 ),
@@ -1101,6 +1140,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ] else ...[
               const Spacer(),
@@ -1252,12 +1293,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
 
     if (selfFriend.transactions.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16.0),
           child: Text(
             'No transactions yet',
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
       );
@@ -1360,6 +1401,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             color: Theme.of(context).hintColor,
             fontSize: 12,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 4),
         Text(
@@ -1369,6 +1412,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -1380,12 +1425,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             '₹${value.toStringAsFixed(0)}',
             style: TextStyle(

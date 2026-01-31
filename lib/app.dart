@@ -67,17 +67,19 @@ class _MoneyTrackAppState extends State<MoneyTrackApp> {
     const primaryColor = Color(0xFF2E7D32); // Dark green
     const secondaryColor = Color(0xFFFF5722); // Orange-red
     
+    final lightColorScheme = ColorScheme.fromSeed(
+      seedColor: primaryColor,
+      brightness: Brightness.light,
+      primary: primaryColor,
+      secondary: secondaryColor,
+      error: ColorUtils.negativeColor,
+      surface: Colors.white,
+      surfaceContainerHighest: Colors.grey[100]!,
+    );
+    
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
-        brightness: Brightness.light,
-        primary: primaryColor,
-        secondary: secondaryColor,
-        error: ColorUtils.negativeColor,
-        surface: Colors.white,
-        surfaceContainerHighest: Colors.grey[100]!,
-      ),
+      colorScheme: lightColorScheme,
       
       // App Bar Theme
       appBarTheme: const AppBarTheme(
@@ -205,8 +207,8 @@ class _MoneyTrackAppState extends State<MoneyTrackApp> {
       
       // Snackbar Theme
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: Colors.grey[800],
-        contentTextStyle: const TextStyle(color: Colors.white),
+        backgroundColor: lightColorScheme.inverseSurface,
+        contentTextStyle: TextStyle(color: lightColorScheme.onInverseSurface),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -293,19 +295,21 @@ class _MoneyTrackAppState extends State<MoneyTrackApp> {
     const surfaceColor = Color(0xFF1E1E1E);
     const cardColor = Color(0xFF2D2D2D);
     
+    final darkColorScheme = ColorScheme.fromSeed(
+      seedColor: primaryColor,
+      brightness: Brightness.dark,
+      primary: primaryColor,
+      secondary: secondaryColor,
+      error: ColorUtils.negativeColorDark,
+      surface: surfaceColor,
+      surfaceContainerHighest: cardColor,
+      onSurface: Colors.white,
+      onPrimary: Colors.black,
+    );
+    
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
-        brightness: Brightness.dark,
-        primary: primaryColor,
-        secondary: secondaryColor,
-        error: ColorUtils.negativeColorDark,
-        surface: surfaceColor,
-        surfaceContainerHighest: cardColor,
-        onSurface: Colors.white,
-        onPrimary: Colors.black,
-      ),
+      colorScheme: darkColorScheme,
       scaffoldBackgroundColor: surfaceColor,
       appBarTheme: const AppBarTheme(
         centerTitle: true,
@@ -347,6 +351,16 @@ class _MoneyTrackAppState extends State<MoneyTrackApp> {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
+      ),
+      // Snackbar Theme
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: darkColorScheme.inverseSurface,
+        contentTextStyle: TextStyle(color: darkColorScheme.onInverseSurface),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        behavior: SnackBarBehavior.floating,
+        elevation: 4,
       ),
     );
   }

@@ -32,8 +32,8 @@ void main() {
     });
 
     // same-sign toward zero
-    test('+200 → +100 (partial repay to me) = 0', () {
-      expect(computeFriendBudgetDelta(200, 100, false), 0);
+    test('+200 → +100 (partial repay to me) = -100 (budget freed)', () {
+      expect(computeFriendBudgetDelta(200, 100, false), -100);
     });
 
     test('-200 → -100 (partial repay by me) = 0', () {

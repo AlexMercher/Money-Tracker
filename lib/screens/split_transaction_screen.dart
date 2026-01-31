@@ -5,6 +5,7 @@ import '../models/friend_split.dart';
 import '../models/transaction.dart';
 import '../models/split_item.dart';
 import '../services/hive_service.dart';
+import '../services/category_service.dart';
 import '../utils/expression_parser.dart';
 
 /// Screen for splitting a transaction among multiple friends
@@ -486,6 +487,11 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
         await HiveService.addTransaction('self', selfTransaction);
       }
 
+      // Learn note into Trie for future suggestions (only if valid note provided)
+      if (note.isNotEmpty) {
+        await CategoryService.learnCategory(note);
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -560,8 +566,11 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
                         child: Text(
                           '${split.friendName} ($status)',
                           style: Theme.of(context).textTheme.bodyMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Text(
                         '₹${split.amount.toStringAsFixed(2)}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -1025,14 +1034,75 @@ class _SplitTransactionScreenState extends State<SplitTransactionScreen> {
                     ),
                     const SizedBox(height: 16),
                     
-                    TextFormField(
-                      controller: _noteController,
-                      decoration: const InputDecoration(
-                        labelText: 'Note (optional)',
-                        border: OutlineInputBorder(),
-                        hintText: 'e.g., Restaurant bill, Movie tickets',
-                      ),
-                      maxLines: 2,
+                    // Note field with autocomplete suggestions
+                    Autocomplete<String>(
+                      optionsBuilder: (TextEditingValue textEditingValue) async {
+                        if (textEditingValue.text.isEmpty) {
+                          return const Iterable<String>.empty();
+                        }
+                        return await CategoryService.getSuggestions(textEditingValue.text);
+                      },
+                      onSelected: (String selection) {
+                        _noteController.text = selection;
+                      },
+                      fieldViewBuilder: (
+                        BuildContext context,
+                        TextEditingController fieldController,
+                        FocusNode fieldFocusNode,
+                        VoidCallback onFieldSubmitted,
+                      ) {
+                        // Sync controllers
+                        if (_noteController.text.isNotEmpty && fieldController.text.isEmpty) {
+                          fieldController.text = _noteController.text;
+                        }
+                        fieldController.addListener(() {
+                          if (_noteController.text != fieldController.text) {
+                            _noteController.text = fieldController.text;
+                          }
+                        });
+                        
+                        return TextFormField(
+                          controller: fieldController,
+                          focusNode: fieldFocusNode,
+                          decoration: const InputDecoration(
+                            labelText: 'Note (optional)',
+                            border: OutlineInputBorder(),
+                            hintText: 'e.g., Restaurant bill, Movie tickets',
+                            helperText: 'Type to see suggestions',
+                          ),
+                          maxLines: 1,
+                        );
+                      },
+                      optionsViewBuilder: (
+                        BuildContext context,
+                        AutocompleteOnSelected<String> onSelected,
+                        Iterable<String> options,
+                      ) {
+                        return Align(
+                          alignment: Alignment.topLeft,
+                          child: Material(
+                            elevation: 4,
+                            borderRadius: BorderRadius.circular(8),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 200, maxWidth: 300),
+                              child: ListView.builder(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                itemCount: options.length,
+                                itemBuilder: (BuildContext context, int index) {
+                                  final option = options.elementAt(index);
+                                  return ListTile(
+                                    dense: true,
+                                    title: Text(option),
+                                    leading: const Icon(Icons.history, size: 18),
+                                    onTap: () => onSelected(option),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     
                     const SizedBox(height: 16),

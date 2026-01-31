@@ -267,14 +267,19 @@ class _PdfManagerScreenState extends State<PdfManagerScreen> {
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'delete_all',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_sweep, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Clear All', style: TextStyle(color: Colors.red)),
-                      ],
+                    child: Builder(
+                      builder: (context) {
+                        final errorColor = Theme.of(context).colorScheme.error;
+                        return Row(
+                          children: [
+                            Icon(Icons.delete_sweep, color: errorColor),
+                            const SizedBox(width: 8),
+                            Text('Clear All', style: TextStyle(color: errorColor)),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -414,14 +419,19 @@ class _PdfManagerScreenState extends State<PdfManagerScreen> {
                                         ],
                                       ),
                                     ),
-                                    const PopupMenuItem(
+                                    PopupMenuItem(
                                       value: 'delete',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.delete, size: 18, color: Colors.red),
-                                          SizedBox(width: 8),
-                                          Text('Delete', style: TextStyle(color: Colors.red)),
-                                        ],
+                                      child: Builder(
+                                        builder: (context) {
+                                          final errorColor = Theme.of(context).colorScheme.error;
+                                          return Row(
+                                            children: [
+                                              Icon(Icons.delete, size: 18, color: errorColor),
+                                              const SizedBox(width: 8),
+                                              Text('Delete', style: TextStyle(color: errorColor)),
+                                            ],
+                                          );
+                                        },
                                       ),
                                     ),
                                   ],

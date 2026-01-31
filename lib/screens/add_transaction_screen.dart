@@ -661,33 +661,60 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     
                     const SizedBox(height: 8),
                     
-                    Row(
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
                       children: [
-                        Expanded(
-                          child: RadioListTile<TransactionType>(
-                            title: Text(_isSelfTransaction ? 'Spent' : 'Lend'),
-                            subtitle: Text(_isSelfTransaction ? 'Money Out' : 'I gave money'),
-                            value: TransactionType.lent,
-                            groupValue: _selectedType,
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedType = value;
-                              });
-                            },
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(minWidth: 160),
+                          child: IntrinsicWidth(
+                            child: RadioListTile<TransactionType>(
+                              title: Text(
+                                _isSelfTransaction ? 'Spent' : 'Lend',
+                                softWrap: true,
+                                maxLines: 2,
+                                overflow: TextOverflow.visible,
+                              ),
+                              subtitle: Text(
+                                _isSelfTransaction ? 'Money Out' : 'I gave money',
+                                softWrap: true,
+                                maxLines: 2,
+                                overflow: TextOverflow.visible,
+                              ),
+                              value: TransactionType.lent,
+                              groupValue: _selectedType,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedType = value;
+                                });
+                              },
+                            ),
                           ),
                         ),
-                        
-                        Expanded(
-                          child: RadioListTile<TransactionType>(
-                            title: Text(_isSelfTransaction ? 'Gained' : 'Borrow'),
-                            subtitle: Text(_isSelfTransaction ? 'Money In' : 'I received money'),
-                            value: TransactionType.borrowed,
-                            groupValue: _selectedType,
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedType = value;
-                              });
-                            },
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(minWidth: 160),
+                          child: IntrinsicWidth(
+                            child: RadioListTile<TransactionType>(
+                              title: Text(
+                                _isSelfTransaction ? 'Gained' : 'Borrow',
+                                softWrap: true,
+                                maxLines: 2,
+                                overflow: TextOverflow.visible,
+                              ),
+                              subtitle: Text(
+                                _isSelfTransaction ? 'Money In' : 'I received money',
+                                softWrap: true,
+                                maxLines: 2,
+                                overflow: TextOverflow.visible,
+                              ),
+                              value: TransactionType.borrowed,
+                              groupValue: _selectedType,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedType = value;
+                                });
+                              },
+                            ),
                           ),
                         ),
                       ],

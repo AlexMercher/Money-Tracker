@@ -1,6 +1,6 @@
 # MoneyTrack
 
-### Download (v1.1.0)
+### Download (v1.1.5)
 [![Download APK](https://img.shields.io/github/v/release/AlexMercher/Money-Tracker?label=Download%20APK&color=success)](https://github.com/AlexMercher/Money-Tracker/releases/tag/v1.1.0)
 
 An offline-first Flutter money tracking app for managing who owes whom money between you and your friends.  

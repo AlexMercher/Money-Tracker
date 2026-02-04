@@ -1,5 +1,4 @@
 # MoneyTrack
-
 ### Download (v1.1.5)
 [![Download APK](https://img.shields.io/github/v/release/AlexMercher/Money-Tracker?label=Download%20APK&color=success)](https://github.com/AlexMercher/Money-Tracker/releases/tag/v1.1.5)
 
@@ -20,40 +19,38 @@ Licensed under CC BY-NC 4.0 — Credit to Himanshu Ranjan.
 - **Multi-Select Note Organization**: Multiple notes can be selected and moved into categories in a single explicit action.
 - **Dark / Light Mode Theme Safety**: All UI text uses semantic theme tokens to remain readable in both light and dark mode.
 
-## Features
-
-### Core Functionality
-- **Offline-first storage** using Hive for local data persistence
-- **Friend management** with transaction history
+## Feature
+Track expenses, manage friend debts with split transactions, set monthly budgets with visual analytics, export PDF reports, and secure your data with biometric authentication — all completely offline with local Hive storage
+### Core Functionalit
+- **Offline-first storage** using Hive for local data persistenc
+- **Friend management** with transaction histor
 - **Balance tracking** with color-coded indicators (Green: You Get, Red: You Owe, Grey: Settled)
-- **Split transactions** among multiple friends with equal or custom amounts
-- **Mathematical expressions** in amount fields (e.g., 20+30*2, 100/2-10) with calculator buttons
-- **Friend autocomplete** with real-time suggestions and duplicate prevention
-- **Transaction search** within friend details by note or amount
-- **Clear debt** with one-tap settlement transaction
-- **PDF export** with transaction history, payment details, and polite reminder message
-- **Transaction grouping** for duplicate transactions with expandable details
-- **Read-only transaction view** showing all fields (amount, type, date, note) when tapped
-- **Biometric authentication** with PIN/password fallback for app security
-- **Shadow ledger** for accurate budget tracking
-- **Cash ledger** for tracking physical cash loans
-
-### User Experience
+- **Split transactions** among multiple friends with equal or custom amount
+- **Mathematical expressions** in amount fields (e.g., 20+30*2, 100/2-10) with calculator button
+- **Friend autocomplete** with real-time suggestions and duplicate preventio
+- **Transaction search** within friend details by note or amoun
+- **Clear debt** with one-tap settlement transactio
+- **PDF export** with transaction history, payment details, and polite reminder messag
+- **Transaction grouping** for duplicate transactions with expandable detail
+- **Read-only transaction view** showing all fields (amount, type, date, note) when tappe
+- **Biometric authentication** with PIN/password fallback for app securit
+- **Shadow ledger** for accurate budget trackin
+- **Cash ledger** for tracking physical cash loan
+### User Experienc
 - **Material 3 design** with light/dark theme support (default: light mode)
-- **Smooth page transitions** with optimized fade and slide animations
-- **Empty state animation** with elastic bounce effect
-- **Transaction management** with add and delete operations
-- **Smart balance calculations** automatically updating net amounts
-- **Clear history prompt** when balance reaches zero
-- **Input validation** ensuring data integrity and preventing duplicates
-- **Confirmation dialogs** for destructive operations
-
-### Security & Data
-- **Offline data storage** - no cloud dependencies
+- **Smooth page transitions** with optimized fade and slide animation
+- **Empty state animation** with elastic bounce effec
+- **Transaction management** with add and delete operation
+- **Smart balance calculations** automatically updating net amount
+- **Clear history prompt** when balance reaches zer
+- **Input validation** ensuring data integrity and preventing duplicate
+- **Confirmation dialogs** for destructive operation
+### Security & Dat
+- **Offline data storage** - no cloud dependencie
 - **Biometric authentication** support (fingerprint, face recognition)
-- **Device credential fallback** when biometrics unavailable
-- **Data persistence** across app launches
-- **Error handling** with user-friendly messages
+- **Device credential fallback** when biometrics unavailabl
+- **Data persistence** across app launche
+- **Error handling** with user-friendly message
 
 ## Technical Details
 
@@ -147,5 +144,3 @@ Licensed under CC BY-NC 4.0 — Credit to Himanshu Ranjan.
 - **Dark mode improvements** for all Settings headers and inline totals
 - **Stronger authentication flow** ensuring verification *before* sensitive actions like settle or clear
 - **Month-boundary cleanup** automatically pruning data older than 12 months
-
-
